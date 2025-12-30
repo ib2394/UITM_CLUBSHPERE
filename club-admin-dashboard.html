@@ -1,0 +1,342 @@
+<!-- club-admin-dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Admin Dashboard - UiTM ClubSphere</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-circle">🎓</div>
+            <h2>ClubSphere</h2>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#" onclick="showClubAdminSection('dashboard')" class="active">📊 Dashboard</a></li>
+            <li><a href="#" onclick="showClubAdminSection('announcements')">📢 Announcements</a></li>
+            <li><a href="#" onclick="showClubAdminSection('events')">📅 Events</a></li>
+            <li><a href="#" onclick="showClubAdminSection('members')">👥 Members</a></li>
+            <li><a href="#" onclick="showClubAdminSection('applicants')">📋 Applicants</a></li>
+            <li><a href="#" onclick="showClubAdminSection('clubProfile')">⚙️ Club Profile</a></li>
+            <li><a href="#" onclick="window.location.href='login.html'">🚪 Logout</a></li><!--<li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>-->
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <h1 id="clubAdminPageTitle">Dashboard</h1>
+            <div class="user-info-top">
+                <span id="clubAdminUserName">Club Admin</span>
+                <span class="user-badge">Computer Science Society</span>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="clubAdminDashboardSection" class="content-section active">
+            <div class="dashboard-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <h3>Total Members</h3>
+                        <p class="stat-number">45</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <h3>Pending Applications</h3>
+                        <p class="stat-number">8</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <h3>Upcoming Events</h3>
+                        <p class="stat-number">3</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-section">
+                <h2>Recent Activity</h2>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <span>✅ New member approved: Ahmad Ali</span>
+                        <span class="date">2 hours ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <span>📢 Announcement posted: Bootcamp Registration</span>
+                        <span class="date">5 hours ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <span>📅 Event created: Web Development Workshop</span>
+                        <span class="date">1 day ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Announcements Section -->
+        <div id="clubAdminAnnouncementsSection" class="content-section">
+            <button class="btn-primary mb-3" onclick="showAddAnnouncementForm()">+ Add New Announcement</button>
+            
+            <div id="addAnnouncementForm" class="form-card" style="display: none;">
+                <h3>Create New Announcement</h3>
+                <form onsubmit="addAnnouncement(event)">
+                    <div class="form-group">
+                        <label>Title *</label>
+                        <input type="text" id="annTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Content *</label>
+                        <textarea id="annContent" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Type *</label>
+                        <select id="annType">
+                            <option value="general">General</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="event">Event Related</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Post Announcement</button>
+                        <button type="button" class="btn-secondary" onclick="hideAddAnnouncementForm()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Date Posted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="announcementsTableBody">
+                        <tr>
+                            <td>Web Development Bootcamp Registration Open</td>
+                            <td><span class="status-badge general">General</span></td>
+                            <td>Dec 20, 2025</td>
+                            <td>
+                                <button class="btn-small btn-danger" onclick="deleteAnnouncement(1)">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Events Section -->
+        <div id="clubAdminEventsSection" class="content-section">
+            <button class="btn-primary mb-3" onclick="showAddEventForm()">+ Add New Event</button>
+            
+            <div id="addEventForm" class="form-card" style="display: none;">
+                <h3>Create New Event</h3>
+                <form onsubmit="addEvent(event)">
+                    <div class="form-group">
+                        <label>Event Name *</label>
+                        <input type="text" id="eventName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="eventDesc" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Event Type *</label>
+                        <select id="eventType">
+                            <option value="workshop">Workshop</option>
+                            <option value="competition">Competition</option>
+                            <option value="seminar">Seminar</option>
+                            <option value="social">Social</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time *</label>
+                        <input type="datetime-local" id="eventDateTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Venue *</label>
+                        <input type="text" id="eventVenue" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Create Event</button>
+                        <button type="button" class="btn-secondary" onclick="hideAddEventForm()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Event Name</th>
+                            <th>Type</th>
+                            <th>Date & Time</th>
+                            <th>Venue</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsTableBody">
+                        <tr>
+                            <td>Web Development Bootcamp</td>
+                            <td><span class="status-badge general">Workshop</span></td>
+                            <td>Jan 15, 2026 - 2:00 PM</td>
+                            <td>Computer Lab A</td>
+                            <td>
+                                <button class="btn-small btn-danger" onclick="deleteEvent(1)">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Members Section -->
+        <div id="clubAdminMembersSection" class="content-section">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Student ID</th>
+                            <th>Faculty</th>
+                            <th>Joined Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Ahmad Ali Bin Abdullah</td>
+                            <td>2024123456</td>
+                            <td>FSKM</td>
+                            <td>Dec 1, 2025</td>
+                            <td>
+                                <button class="btn-small" onclick="viewMemberProfile(1)">View</button>
+                                <button class="btn-small btn-danger" onclick="removeMember(1)">Remove</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Siti Nurhaliza Binti Hassan</td>
+                            <td>2024234567</td>
+                            <td>FSKM</td>
+                            <td>Nov 15, 2025</td>
+                            <td>
+                                <button class="btn-small" onclick="viewMemberProfile(2)">View</button>
+                                <button class="btn-small btn-danger" onclick="removeMember(2)">Remove</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Applicants Section -->
+        <div id="clubAdminApplicantsSection" class="content-section">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Student ID</th>
+                            <th>Faculty</th>
+                            <th>Applied Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Nurul Aina Binti Ibrahim</td>
+                            <td>2024345678</td>
+                            <td>FSKM</td>
+                            <td>Dec 25, 2025</td>
+                            <td>
+                                <button class="btn-small btn-success" onclick="approveApplicant(1)">Approve</button>
+                                <button class="btn-small btn-danger" onclick="rejectApplicant(1)">Reject</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Muhammad Iqbal Bin Zaki</td>
+                            <td>2024456789</td>
+                            <td>FPP</td>
+                            <td>Dec 24, 2025</td>
+                            <td>
+                                <button class="btn-small btn-success" onclick="approveApplicant(2)">Approve</button>
+                                <button class="btn-small btn-danger" onclick="rejectApplicant(2)">Reject</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Club Profile Section -->
+        <div id="clubAdminProfileSection" class="content-section">
+            <div class="profile-container">
+                <div class="club-profile-header">
+                    <h2>Computer Science Society</h2>
+                    <button class="btn-primary" onclick="toggleEditClubProfile()">Edit Club Profile</button>
+                </div>
+
+                <div class="club-profile-details">
+                    <div class="detail-group">
+                        <label>Mission</label>
+                        <p id="clubMission">Empowering students with cutting-edge technology skills and innovation.</p>
+                    </div>
+                    <div class="detail-group">
+                        <label>Vision</label>
+                        <p id="clubVision">To be the leading technology community in UiTM.</p>
+                    </div>
+                    <div class="detail-group">
+                        <label>Email</label>
+                        <p id="clubEmail">cs.society@uitm.edu.my</p>
+                    </div>
+                    <div class="detail-group">
+                        <label>Phone</label>
+                        <p id="clubPhone">03-12345678</p>
+                    </div>
+                    <div class="detail-group">
+                        <label>Advisor</label>
+                        <p id="clubAdvisor">Dr. Ahmad Abdullah (ahmad.abdullah@uitm.edu.my)</p>
+                    </div>
+                </div>
+
+                <!-- Edit Club Profile Form -->
+                <div id="editClubProfileForm" class="edit-form" style="display: none;">
+                    <h3>Edit Club Profile</h3>
+                    <form onsubmit="saveClubProfile(event)">
+                        <div class="form-group">
+                            <label>Mission</label>
+                            <textarea id="editClubMission" rows="2">Empowering students with cutting-edge technology skills and innovation.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Vision</label>
+                            <textarea id="editClubVision" rows="2">To be the leading technology community in UiTM.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="editClubEmail" value="cs.society@uitm.edu.my">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="editClubPhone" value="03-12345678">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Save Changes</button>
+                            <button type="button" class="btn-secondary" onclick="toggleEditClubProfile()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="club-admin.js"></script>
+</body>
+</html>
