@@ -1,87 +1,96 @@
-// auth.js - Authentication Functions
+// auth.js - Authentication Functions for UiTM ClubSphere
 
 /**
  * Handle user login
- * @param {Event} event - Form submit event
+ * Connects to Node.js API to verify credentials against Oracle USERS table
  */
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     
-    const userType = document.getElementById('userType').value;
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    // Grabs values from the login form IDs
+    const data = {
+        user_type: document.getElementById('userType').value,
+        user_email: document.getElementById('email').value,
+        user_password: document.getElementById('password').value
+    };
 
-    // Validate form fields
-    if (!userType || !email || !password) {
-        alert('Please fill in all fields');
-        return;
-    }
+    try {
+        const response = await fetch('http://localhost:3000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
 
-    // Store user information in sessionStorage
-    sessionStorage.setItem('isLoggedIn', 'true');
-    sessionStorage.setItem('userType', userType);
-    sessionStorage.setItem('userEmail', email);
+        const result = await response.json();
 
-    // Redirect based on user type
-    switch(userType) {
-        case 'student':
-            window.location.href = 'student-dashboard.html';
-            break;
-        case 'club_admin':
-            window.location.href = 'club-admin-dashboard.html';
-            break;
-        case 'admin':
-            window.location.href = 'admin-dashboard.html';
-            break;
-        default:
-            alert('Invalid user type');
+        if (response.ok) {
+            // Store session info for dashboard personalization
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('userEmail', result.user.email);
+            sessionStorage.setItem('userType', result.user.type);
+            sessionStorage.setItem('userName', result.user.name);
+
+            alert(`✅ Welcome back, ${result.user.name}!`);
+            
+            // Redirects to dashboard (e.g., student-dashboard.html) based on DB USER_TYPE
+            window.location.href = result.user.type + '-dashboard.html';
+        } else {
+            alert("❌ " + (result.message || "Login Failed"));
+        }
+    } catch (error) {
+        console.error("Login Error:", error);
+        alert("🚨 Connection Error: Is your server.js running?");
     }
 }
 
 /**
- * Handle student registration
- * @param {Event} event - Form submit event
+ * Handle user registration
+ * Captures role and student info to populate USERS and STUDENT_INFO tables
  */
-function handleRegister(event) {
+async function handleRegister(event) {
     event.preventDefault();
     
-    const name = document.getElementById('regName').value;
-    const studentId = document.getElementById('regStudentId').value;
-    const email = document.getElementById('regEmail').value;
-    const faculty = document.getElementById('regFaculty').value;
-    const program = document.getElementById('regProgram').value;
-    const semester = document.getElementById('regSemester').value;
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
 
-    // Validate passwords match
+    // GUI Validation: Passwords must match before sending to server
     if (password !== confirmPassword) {
-        alert('Passwords do not match!');
+        alert('⚠️ Passwords do not match!');
         return;
     }
 
-    // Validate all fields are filled
-    if (!name || !studentId || !email || !faculty || !program || !semester || !password) {
-        alert('Please fill in all fields');
-        return;
-    }
-
-    // Store registration data (in real app, this would go to backend)
-    const studentData = {
-        name: name,
-        studentId: studentId,
-        email: email,
-        faculty: faculty,
-        program: program,
-        semester: semester
+    // Matches the 3NF schema structure for USERS and STUDENT_INFO
+    const registrationData = {
+        user_type: document.getElementById('regUserType').value, // Matches new register.html dropdown
+        user_name: document.getElementById('regName').value,
+        user_email: document.getElementById('regEmail').value,
+        user_password: password,
+        // Optional student fields (will be empty/null for Admin users)
+        student_number: document.getElementById('regStudentId').value || null,
+        student_faculty: document.getElementById('regFaculty').value || null,
+        student_program: document.getElementById('regProgram').value || null,
+        student_semester: document.getElementById('regSemester').value || null
     };
 
-    // Store in sessionStorage temporarily
-    sessionStorage.setItem('studentData', JSON.stringify(studentData));
+    try {
+        const response = await fetch('http://localhost:3000/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(registrationData)
+        });
 
-    // Show success message and redirect to login
-    alert('Registration successful! Please login with your credentials.');
-    window.location.href = 'login.html';
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`✅ Registration successful as ${registrationData.user_type}!`);
+            window.location.href = 'login.html';
+        } else {
+            alert("❌ " + (result.message || "Registration Failed"));
+        }
+    } catch (error) {
+        console.error("Registration Error:", error);
+        alert("🚨 Connection Error: Could not reach the server.");
+    }
 }
 
 /**
@@ -89,42 +98,22 @@ function handleRegister(event) {
  */
 function handleLogout() {
     if (confirm('Are you sure you want to logout?')) {
-        // Clear session storage
         sessionStorage.clear();
-        
-        // Redirect to login page
         window.location.href = 'login.html';
     }
 }
 
 /**
- * Check if user is authenticated
- * Call this on page load for protected pages
+ * Check if user is authenticated (Call this on dashboard load)
  */
 function checkAuth() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn');
     const userType = sessionStorage.getItem('userType');
     
     if (!isLoggedIn || isLoggedIn !== 'true') {
-        // Redirect to login if not authenticated
         window.location.href = 'login.html';
         return false;
     }
     
     return { isLoggedIn: true, userType: userType };
-}
-
-/**
- * Load user information from session
- */
-function loadUserInfo() {
-    const userEmail = sessionStorage.getItem('userEmail');
-    const userType = sessionStorage.getItem('userType');
-    const studentData = JSON.parse(sessionStorage.getItem('studentData'));
-    
-    return {
-        email: userEmail,
-        type: userType,
-        studentData: studentData
-    };
 }
