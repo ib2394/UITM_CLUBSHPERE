@@ -117,6 +117,9 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// --------------------- //
+// Section untuk Student Affair //
+
 // 6. API: Get All Clubs (Admin)
 app.get('/api/admin/clubs', async (req, res) => {
   let connection;
@@ -124,11 +127,7 @@ app.get('/api/admin/clubs', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const sql = `
-      SELECT 
-        c.CLUB_ID,
-        c.CLUB_NAME,
-        c.ADVISOR_NAME,
-        cat.CATEGORY_NAME,
+      SELECT c.CLUB_ID, c.CLUB_NAME, c.ADVISOR_NAME, cat.CATEGORY_NAME,
         (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.CLUB_ID = c.CLUB_ID) as MEMBER_COUNT
       FROM CLUBS c
       LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID
@@ -160,12 +159,7 @@ app.get('/api/admin/students', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const sql = `
-      SELECT 
-        u.USER_ID,
-        u.USER_NAME,
-        si.STUDENT_NUMBER,
-        si.STUDENT_FACULTY,
-        si.STUDENT_PROGRAM,
+      SELECT u.USER_ID, u.USER_NAME, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM,
         (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.USER_ID = u.USER_ID) as CLUBS_JOINED
       FROM USERS u
       JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID
@@ -197,12 +191,7 @@ app.get('/api/admin/announcements', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const sql = `
-      SELECT 
-        a.ANNC_ID,
-        a.ANNC_TITLE,
-        a.ANNC_TYPE,
-        a.ANNC_DATE,
-        c.CLUB_NAME
+      SELECT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_TYPE, a.ANNC_DATE, c.CLUB_NAME
       FROM ANNOUNCEMENT a
       JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID
       ORDER BY a.ANNC_DATE DESC
@@ -232,13 +221,7 @@ app.get('/api/admin/events', async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const sql = `
-      SELECT 
-        e.EVENT_ID,
-        e.EVENT_NAME,
-        e.EVENT_TYPE,
-        e.EVENT_DATETIME,
-        e.EVENT_DESC,
-        c.CLUB_NAME
+      SELECT e.EVENT_ID, e.EVENT_NAME, e.EVENT_TYPE, e.EVENT_DATETIME, e.EVENT_DESC, c.CLUB_NAME
       FROM EVENTS e
       JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID
       ORDER BY e.EVENT_DATETIME DESC
