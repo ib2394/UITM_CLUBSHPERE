@@ -255,6 +255,7 @@ function hideAddClubForm() {
     document.getElementById('newClubName').value = '';
     document.getElementById('newClubCategory').value = '';
     document.getElementById('newClubMission').value = '';
+    document.getElementById('newClubVision').value = '';
     document.getElementById('newClubEmail').value = '';
     document.getElementById('newClubPhone').value = '';
     document.getElementById('newClubAdvisor').value = '';
