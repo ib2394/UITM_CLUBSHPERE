@@ -1,12 +1,14 @@
 <!-- admin-dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - UiTM ClubSphere</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <nav class="sidebar">
         <div class="sidebar-header">
@@ -18,7 +20,8 @@
             <li><a href="#" onclick="showAdminSection('students')">👥 All Students</a></li>
             <li><a href="#" onclick="showAdminSection('announcements')">📢 All Announcements</a></li>
             <li><a href="#" onclick="showAdminSection('events')">📅 All Events</a></li>
-            <li><a href="#" onclick="window.location.href='login.html'">🚪 Logout</a></li><!--<li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>-->
+            <li><a href="#" onclick="window.location.href='login.html'">🚪 Logout</a></li>
+            <!--<li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>-->
         </ul>
     </nav>
 
@@ -55,6 +58,10 @@
                     <div class="form-group">
                         <label>Mission *</label>
                         <textarea id="newClubMission" rows="2" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Vision *</label>
+                        <textarea id="newClubVision" rows="2" required></textarea>
                     </div>
                     <div class="form-group">
                         <label>Email *</label>
@@ -220,7 +227,8 @@
                             <td><span class="status-badge general">General</span></td>
                             <td>Dec 20, 2025</td>
                             <td>
-                                <button class="btn-small btn-danger" onclick="deleteAnnouncementAdmin(1)">Delete</button>
+                                <button class="btn-small btn-danger"
+                                    onclick="deleteAnnouncementAdmin(1)">Delete</button>
                             </td>
                         </tr>
                         <tr>
@@ -229,7 +237,8 @@
                             <td><span class="status-badge urgent">Urgent</span></td>
                             <td>Dec 18, 2025</td>
                             <td>
-                                <button class="btn-small btn-danger" onclick="deleteAnnouncementAdmin(2)">Delete</button>
+                                <button class="btn-small btn-danger"
+                                    onclick="deleteAnnouncementAdmin(2)">Delete</button>
                             </td>
                         </tr>
                         <tr>
@@ -238,7 +247,8 @@
                             <td><span class="status-badge general">Event</span></td>
                             <td>Dec 15, 2025</td>
                             <td>
-                                <button class="btn-small btn-danger" onclick="deleteAnnouncementAdmin(3)">Delete</button>
+                                <button class="btn-small btn-danger"
+                                    onclick="deleteAnnouncementAdmin(3)">Delete</button>
                             </td>
                         </tr>
                     </tbody>
@@ -310,4 +320,5 @@
     <script src="auth.js"></script>
     <script src="admin.js"></script>
 </body>
+
 </html>
