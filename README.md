@@ -15,4 +15,5 @@ their members, and events.
 - Schema: UITM_CLUBSPHERE
 
 ## Files
-- create_tables.sql – SQL script to create tables
+- ~create_tables.sql~ – SQL script to create tables
+- Use create_table_latest.sql
