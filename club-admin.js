@@ -1,7 +1,7 @@
 // club-admin.js - Club Admin Dashboard Functions
 
 // Check authentication on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const auth = checkAuth();
     if (!auth || auth.userType !== 'club_admin') {
         window.location.href = 'index.html';
@@ -79,11 +79,11 @@ function addAnnouncement(event) {
     // In real app, send to backend
     const tableBody = document.getElementById('announcementsTableBody');
     const newRow = tableBody.insertRow(0);
-    
-    const currentDate = new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+
+    const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
 
     newRow.innerHTML = `
@@ -146,14 +146,14 @@ function addEvent(event) {
 
     // Format date
     const eventDate = new Date(dateTime);
-    const formattedDate = eventDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
+    const formattedDate = eventDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
         day: 'numeric'
     });
-    const formattedTime = eventDate.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    const formattedTime = eventDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
     });
 
     newRow.innerHTML = `

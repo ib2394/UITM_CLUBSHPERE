@@ -6,7 +6,7 @@
  */
 async function handleLogin(event) {
     event.preventDefault();
-    
+
     // Grabs values from the login form IDs
     const data = {
         user_type: document.getElementById('userType').value,
@@ -31,9 +31,15 @@ async function handleLogin(event) {
             sessionStorage.setItem('userName', result.user.name);
 
             alert(`✅ Welcome back, ${result.user.name}!`);
-            
+
             // Redirects to dashboard (e.g., student-dashboard.html) based on DB USER_TYPE
-            window.location.href = result.user.type + '-dashboard.html';
+            const dashboardMap = {
+                'student': 'student-dashboard.html',
+                'admin': 'admin-dashboard.html',
+                'club_admin': 'club-admin-dashboard.html'
+            };
+
+            window.location.href = dashboardMap[result.user.type];
         } else {
             alert("❌ " + (result.message || "Login Failed"));
         }
@@ -49,7 +55,7 @@ async function handleLogin(event) {
  */
 async function handleRegister(event) {
     event.preventDefault();
-    
+
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
 
@@ -109,11 +115,11 @@ function handleLogout() {
 function checkAuth() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn');
     const userType = sessionStorage.getItem('userType');
-    
+
     if (!isLoggedIn || isLoggedIn !== 'true') {
         window.location.href = 'login.html';
         return false;
     }
-    
+
     return { isLoggedIn: true, userType: userType };
 }
