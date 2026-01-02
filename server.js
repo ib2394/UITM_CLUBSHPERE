@@ -18,12 +18,12 @@ const dbConfig = {
   connectString: "localhost:1521/FREEPDB1"
 };
 
-// 3. Route to serve the login page
+// 3. Serve login page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-/* --- SECTION 1: AUTHENTICATION (Login/Register) --- */
+/* --- SECTION 1: AUTHENTICATION --- */
 
 app.post('/api/login', async (req, res) => {
   let connection;
@@ -62,32 +62,29 @@ app.post('/api/register', async (req, res) => {
   finally { if (connection) await connection.close(); }
 });
 
-/* --- SECTION 2: STUDENT DASHBOARD DATA --- */
+/* --- SECTION 2: STUDENT DASHBOARD APIS --- */
 
-// Fetch Student Profile
 app.get('/api/profile/:email', async (req, res) => {
     let connection;
     try {
-        const userEmail = req.params.email;
         connection = await oracledb.getConnection(dbConfig);
         const sql = `SELECT u.USER_NAME, u.USER_EMAIL, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, si.STUDENT_SEMESTER
             FROM USERS u JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE u.USER_EMAIL = :email`;
-        const result = await connection.execute(sql, [userEmail], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        if (result.rows.length > 0) { res.status(200).json(result.rows[0]); }
-        else { res.status(404).send({ message: "Profile not found" }); }
+        const result = await connection.execute(sql, [req.params.email], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        if (result.rows.length > 0) res.json(result.rows[0]);
+        else res.status(404).send({ message: "Not found" });
     } catch (err) { res.status(500).send(err.message); }
     finally { if (connection) await connection.close(); }
 });
 
-// Dashboard Statistics (Counts)
 app.get('/api/student/stats/:email', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
         const sql = `SELECT 
-                (SELECT COUNT(*) FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email) as JOINED,
-                (SELECT COUNT(*) FROM APPLICATION a JOIN USERS u ON a.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email) as APPS,
-                (SELECT COUNT(*) FROM EVENTS e JOIN USERS_CLUB uc ON e.CLUB_ID = uc.CLUB_ID JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email AND e.EVENT_DATETIME > SYSDATE) as EVENTS
+            (SELECT COUNT(*) FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email) as JOINED,
+            (SELECT COUNT(*) FROM APPLICATION a JOIN USERS u ON a.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email) as APPS,
+            (SELECT COUNT(*) FROM EVENTS e JOIN USERS_CLUB uc ON e.CLUB_ID = uc.CLUB_ID JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email AND e.EVENT_DATETIME > SYSDATE) as EVENTS
             FROM DUAL`;
         const result = await connection.execute(sql, [req.params.email], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows[0]);
@@ -95,12 +92,11 @@ app.get('/api/student/stats/:email', async (req, res) => {
     finally { if (connection) await connection.close(); }
 });
 
-// Recent Announcements for Student
 app.get('/api/student/announcements/:email', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_DATE, c.CLUB_NAME
+        const sql = `SELECT a.ANNC_TITLE, a.ANNC_DATE, c.CLUB_NAME
             FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID
             JOIN USERS_CLUB uc ON c.CLUB_ID = uc.CLUB_ID JOIN USERS u ON uc.USER_ID = u.USER_ID
             WHERE u.USER_EMAIL = :email ORDER BY a.ANNC_DATE DESC`;
@@ -110,12 +106,11 @@ app.get('/api/student/announcements/:email', async (req, res) => {
     finally { if (connection) await connection.close(); }
 });
 
-// All Clubs for Explore Section
 app.get('/api/student/clubs', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT c.CLUB_ID, c.CLUB_NAME, c.CLUB_MISSION, c.ADVISOR_NAME, cat.CATEGORY_NAME
+        const sql = `SELECT c.CLUB_ID, c.CLUB_NAME, c.ADVISOR_NAME, cat.CATEGORY_NAME, c.CLUB_MISSION
             FROM CLUBS c LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID
             LEFT JOIN CATEGORY cat ON cc.CATEGORY_ID = cat.CATEGORY_ID`;
         const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
@@ -124,7 +119,6 @@ app.get('/api/student/clubs', async (req, res) => {
     finally { if (connection) await connection.close(); }
 });
 
-// Student's Own Applications
 app.get('/api/student/applications/:email', async (req, res) => {
     let connection;
     try {
@@ -138,7 +132,7 @@ app.get('/api/student/applications/:email', async (req, res) => {
     finally { if (connection) await connection.close(); }
 });
 
-/* --- SECTION 3: ADMIN DASHBOARD (Clubs/Students/Delete) --- */
+/* --- SECTION 3: ADMIN DASHBOARD APIS --- */
 
 app.get('/api/admin/clubs', async (req, res) => {
   let connection;
@@ -165,6 +159,21 @@ app.get('/api/admin/students', async (req, res) => {
     res.json(result.rows);
   } catch (err) { res.status(500).send(err.message); }
   finally { if (connection) await connection.close(); }
+});
+
+app.post('/api/admin/clubs', async (req, res) => {
+    let connection;
+    try {
+        const { club_name, category_id, club_mission, club_vision, club_email, club_phone, advisor_name, advisor_email, advisor_phone } = req.body;
+        connection = await oracledb.getConnection(dbConfig);
+        const sql = `INSERT INTO CLUBS (CLUB_ID, CLUB_NAME, CLUB_MISSION, CLUB_VISION, CLUB_EMAIL, CLUB_PHONE, ADVISOR_NAME, ADVISOR_EMAIL, ADVISOR_PHONE) 
+                     VALUES (club_seq.NEXTVAL, :name, :mission, :vision, :email, :phone, :adv, :adv_e, :adv_p) RETURNING CLUB_ID INTO :id`;
+        const result = await connection.execute(sql, { name: club_name, mission: club_mission, vision: club_vision, email: club_email, phone: club_phone, adv: advisor_name, adv_e: advisor_email, adv_p: advisor_phone, id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } });
+        await connection.execute(`INSERT INTO CLUB_CATEGORY (CLUB_CAT_ID, CLUB_ID, CATEGORY_ID) VALUES (club_cat_seq.NEXTVAL, :cid, :catid)`, [result.outBinds.id[0], category_id]);
+        await connection.commit();
+        res.status(201).send({ message: "Club added" });
+    } catch (err) { res.status(500).send(err.message); }
+    finally { if (connection) await connection.close(); }
 });
 
 app.delete('/api/admin/clubs/:id', async (req, res) => {
@@ -197,6 +206,16 @@ app.delete('/api/admin/students/:id', async (req, res) => {
       res.send({ message: "Deleted" });
   } catch (err) { res.status(500).send({ error: err.message }); }
   finally { if (connection) await connection.close(); }
+});
+
+app.get('/api/categories', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const result = await connection.execute('SELECT * FROM CATEGORY', [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        res.json(result.rows);
+    } catch (err) { res.status(500).send(err.message); }
+    finally { if (connection) await connection.close(); }
 });
 
 app.listen(3000, () => console.log(`🚀 Server running at http://localhost:3000`));

@@ -7,13 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     loadClubs();
+    loadCategories();
 });
+
+async function loadCategories() {
+    const res = await fetch(`${API_URL}/categories`);
+    const cats = await res.json();
+    const select = document.getElementById('newClubCategory');
+    if(select) {
+        select.innerHTML = '<option value="">Select category</option>' + 
+        cats.map(c => `<option value="${c.CATEGORY_ID}">${c.CATEGORY_NAME}</option>`).join('');
+    }
+}
 
 async function loadClubs() {
     const response = await fetch(`${API_URL}/admin/clubs`);
     const clubs = await response.json();
-    const tableBody = document.querySelector('#adminClubsSection tbody');
-    tableBody.innerHTML = clubs.map(club => `
+    const tableBody = document.getElementById('clubsTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = clubs.map(club => `
         <tr>
             <td>${club.CLUB_NAME}</td>
             <td><span class="status-badge general">${club.CATEGORY_NAME || 'None'}</span></td>
@@ -24,13 +36,15 @@ async function loadClubs() {
                 <button class="btn-small btn-danger" onclick="deleteClub(${club.CLUB_ID})">Delete</button>
             </td>
         </tr>`).join('');
+    }
 }
 
 async function loadStudents() {
     const response = await fetch(`${API_URL}/admin/students`);
     const students = await response.json();
-    const tableBody = document.querySelector('#adminStudentsSection tbody');
-    tableBody.innerHTML = students.map(s => `
+    const tableBody = document.getElementById('studentsTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = students.map(s => `
         <tr>
             <td>${s.USER_NAME}</td>
             <td>${s.STUDENT_NUMBER}</td>
@@ -42,66 +56,72 @@ async function loadStudents() {
                 <button class="btn-small btn-danger" onclick="deleteStudent(${s.USER_ID})">Delete</button>
             </td>
         </tr>`).join('');
+    }
 }
 
 async function deleteClub(id) {
-    if (confirm("🚨 DELETE CLUB?\nThis will remove all members and history permanently.")) {
+    if (confirm("🚨 DELETE CLUB?\nThis will remove all history permanently.")) {
         const res = await fetch(`${API_URL}/admin/clubs/${id}`, { method: 'DELETE' });
         if (res.ok) { alert("Club deleted."); loadClubs(); }
     }
 }
 
 async function deleteStudent(id) {
-    if (confirm("⚠️ DELETE STUDENT?\nThis will permanently remove this account.")) {
+    if (confirm("⚠️ DELETE STUDENT?\nThis account will be permanently removed.")) {
         const res = await fetch(`${API_URL}/admin/students/${id}`, { method: 'DELETE' });
         if (res.ok) { alert("Student deleted."); loadStudents(); }
     }
 }
 
-function viewClubDetails(name, advisor) {
-    alert(`🏢 CLUB INFO\nName: ${name}\nAdvisor: ${advisor}`);
-}
-
-function viewStudentDetails(name, id, faculty) {
-    alert(`👤 STUDENT INFO\nName: ${name}\nID: ${id}\nFaculty: ${faculty}`);
-}
+function viewClubDetails(name, advisor) { alert(`🏢 CLUB INFO\nName: ${name}\nAdvisor: ${advisor}`); }
+function viewStudentDetails(name, id, faculty) { alert(`👤 STUDENT INFO\nName: ${name}\nID: ${id}\nFaculty: ${faculty}`); }
 
 function showAdminSection(section) {
-    // 1. Hide all content sections
-    const sections = document.querySelectorAll('.content-section');
-    sections.forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-menu a').forEach(link => link.classList.remove('active'));
+    
+    const targetSection = document.getElementById('admin' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section');
+    if (targetSection) targetSection.classList.add('active');
+    
+    document.getElementById('adminPageTitle').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+    
+    if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-    // 2. Remove 'active' class from ALL sidebar links
-    const navLinks = document.querySelectorAll('.nav-menu a');
-    navLinks.forEach(link => link.classList.remove('active'));
-
-    // 3. Show the target section
-    const sectionId = 'admin' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section';
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
-
-    // 4. Set the clicked link to active (using event.currentTarget)
-    // IMPORTANT: Make sure the onclick in HTML passes 'event' if needed, 
-    // or use this more robust selector:
-    const activeLink = document.querySelector(`[onclick="showAdminSection('${section}')"]`);
-    if (activeLink) {
-        activeLink.classList.add('active');
-    }
-
-    // 5. Update page title
-    const titles = {
-        'clubs': 'All Clubs',
-        'students': 'All Students',
-        'announcements': 'All Announcements',
-        'events': 'All Events'
-    };
-    document.getElementById('adminPageTitle').textContent = titles[section] || 'All Clubs';
-
-    // Load data for the selected section
     if (section === 'clubs') loadClubs();
     if (section === 'students') loadStudents();
-    if (section === 'announcements') loadAnnouncements();
-    if (section === 'events') loadEvents();
+}
+
+function showAddClubForm() {
+    document.getElementById('addClubForm').style.display = 'block';
+}
+
+function hideAddClubForm() {
+    document.getElementById('addClubForm').style.display = 'none';
+}
+
+async function addNewClub(event) {
+    event.preventDefault();
+    const data = {
+        club_name: document.getElementById('newClubName').value,
+        category_id: document.getElementById('newClubCategory').value,
+        club_mission: document.getElementById('newClubMission').value,
+        club_vision: document.getElementById('newClubVision').value,
+        club_email: document.getElementById('newClubEmail').value,
+        club_phone: document.getElementById('newClubPhone').value,
+        advisor_name: document.getElementById('newClubAdvisor').value,
+        advisor_email: document.getElementById('newClubAdvisorEmail').value,
+        advisor_phone: "" // Default empty for this setup
+    };
+
+    const res = await fetch(`${API_URL}/admin/clubs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("✅ Club added!");
+        hideAddClubForm();
+        loadClubs();
+    }
 }

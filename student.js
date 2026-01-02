@@ -58,7 +58,7 @@ async function loadExploreClubs() {
         <div class="club-card" data-category="${c.CATEGORY_NAME ? c.CATEGORY_NAME.toLowerCase() : 'none'}">
             <div class="club-card-header"><h3>${c.CLUB_NAME}</h3><span class="club-category">${c.CATEGORY_NAME}</span></div>
             <div class="club-card-body"><p><strong>Advisor:</strong> ${c.ADVISOR_NAME}</p></div>
-            <div class="club-card-footer"><button class="btn-primary" onclick="alert('Applied!')">Apply Now</button></div>
+            <div class="club-card-footer"><button class="btn-primary" onclick="alert('Applied to ${c.CLUB_NAME}!')">Apply Now</button></div>
         </div>`).join('');
 }
 
@@ -78,6 +78,9 @@ async function loadMyApplications(email) {
 function showStudentSection(section) {
     document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-menu a').forEach(link => link.classList.remove('active'));
+    
     document.getElementById('student' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section').classList.add('active');
     document.getElementById('studentPageTitle').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+    
+    if (event && event.currentTarget) event.currentTarget.classList.add('active');
 }
