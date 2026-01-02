@@ -1,4 +1,3 @@
-<!-- admin-dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -20,8 +19,7 @@
             <li><a href="#" onclick="showAdminSection('students')">👥 All Students</a></li>
             <li><a href="#" onclick="showAdminSection('announcements')">📢 All Announcements</a></li>
             <li><a href="#" onclick="showAdminSection('events')">📅 All Events</a></li>
-            <li><a href="#" onclick="window.location.href='login.html'">🚪 Logout</a></li>
-            <!--<li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>-->
+            <li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>
         </ul>
     </nav>
 
@@ -34,7 +32,6 @@
             </div>
         </div>
 
-        <!-- All Clubs Section -->
         <div id="adminClubsSection" class="content-section active">
             <button class="btn-primary mb-3" onclick="showAddClubForm()">+ Add New Club</button>
 
@@ -49,11 +46,7 @@
                         <label>Category *</label>
                         <select id="newClubCategory" required>
                             <option value="">Select category</option>
-                            <option value="academic">Academic</option>
-                            <option value="sports">Sports</option>
-                            <option value="arts">Arts & Culture</option>
-                            <option value="technology">Technology</option>
-                        </select>
+                            </select>
                     </div>
                     <div class="form-group">
                         <label>Mission *</label>
@@ -97,53 +90,11 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Computer Science Society</td>
-                            <td><span class="status-badge general">Technology</span></td>
-                            <td>45</td>
-                            <td>Dr. Ahmad Abdullah</td>
-                            <td>
-                                <button class="btn-small" onclick="viewClubDetails(1)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteClub(1)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Debate & Public Speaking Club</td>
-                            <td><span class="status-badge general">Academic</span></td>
-                            <td>32</td>
-                            <td>Prof. Sarah Lee</td>
-                            <td>
-                                <button class="btn-small" onclick="viewClubDetails(2)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteClub(2)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Photography Club</td>
-                            <td><span class="status-badge general">Arts & Culture</span></td>
-                            <td>28</td>
-                            <td>Mr. Rahman Ibrahim</td>
-                            <td>
-                                <button class="btn-small" onclick="viewClubDetails(3)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteClub(3)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Badminton Club</td>
-                            <td><span class="status-badge general">Sports</span></td>
-                            <td>38</td>
-                            <td>Coach Faizal Hassan</td>
-                            <td>
-                                <button class="btn-small" onclick="viewClubDetails(4)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteClub(4)">Delete</button>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="clubsTableBody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- All Students Section -->
         <div id="adminStudentsSection" class="content-section">
             <div class="table-container">
                 <table class="data-table">
@@ -157,57 +108,11 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Muhammad Hakim Bin Mohd Zabidi</td>
-                            <td>2024974281</td>
-                            <td>FSKM</td>
-                            <td>CS264</td>
-                            <td>3</td>
-                            <td>
-                                <button class="btn-small" onclick="viewStudentDetails(1)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteStudent(1)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Nur Atiqah Zulaika Binti Ismail</td>
-                            <td>2025111081</td>
-                            <td>FSKM</td>
-                            <td>CS264</td>
-                            <td>2</td>
-                            <td>
-                                <button class="btn-small" onclick="viewStudentDetails(2)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteStudent(2)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Ibtisam Binti Asrul Hafiz</td>
-                            <td>2025380867</td>
-                            <td>FSKM</td>
-                            <td>CS264</td>
-                            <td>1</td>
-                            <td>
-                                <button class="btn-small" onclick="viewStudentDetails(3)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteStudent(3)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Luqman Hanis Daniel Bin Khailmi</td>
-                            <td>2025300833</td>
-                            <td>FSKM</td>
-                            <td>CS264</td>
-                            <td>4</td>
-                            <td>
-                                <button class="btn-small" onclick="viewStudentDetails(4)">View</button>
-                                <button class="btn-small btn-danger" onclick="deleteStudent(4)">Delete</button>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="studentsTableBody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- All Announcements Section -->
         <div id="adminAnnouncementsSection" class="content-section">
             <div class="table-container">
                 <table class="data-table">
@@ -220,43 +125,11 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Web Development Bootcamp Registration Open</td>
-                            <td>Computer Science Society</td>
-                            <td><span class="status-badge general">General</span></td>
-                            <td>Dec 20, 2025</td>
-                            <td>
-                                <button class="btn-small btn-danger"
-                                    onclick="deleteAnnouncementAdmin(1)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Debate Championship Reminder</td>
-                            <td>Debate Club</td>
-                            <td><span class="status-badge urgent">Urgent</span></td>
-                            <td>Dec 18, 2025</td>
-                            <td>
-                                <button class="btn-small btn-danger"
-                                    onclick="deleteAnnouncementAdmin(2)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Photography Exhibition Next Week</td>
-                            <td>Photography Club</td>
-                            <td><span class="status-badge general">Event</span></td>
-                            <td>Dec 15, 2025</td>
-                            <td>
-                                <button class="btn-small btn-danger"
-                                    onclick="deleteAnnouncementAdmin(3)">Delete</button>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="announcementsTableBody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- All Events Section -->
         <div id="adminEventsSection" class="content-section">
             <div class="table-container">
                 <table class="data-table">
@@ -266,52 +139,11 @@
                             <th>Club</th>
                             <th>Type</th>
                             <th>Date & Time</th>
-                            <th>Venue</th>
+                            <th>Description</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Web Development Bootcamp</td>
-                            <td>Computer Science Society</td>
-                            <td><span class="status-badge general">Workshop</span></td>
-                            <td>Jan 15, 2026 - 2:00 PM</td>
-                            <td>Computer Lab A</td>
-                            <td>
-                                <button class="btn-small" onclick="viewEventDetails(1)">View</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Inter-Faculty Debate Championship</td>
-                            <td>Debate Club</td>
-                            <td><span class="status-badge general">Competition</span></td>
-                            <td>Jan 20, 2026 - 9:00 AM</td>
-                            <td>Grand Hall</td>
-                            <td>
-                                <button class="btn-small" onclick="viewEventDetails(2)">View</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Photography Walk & Exhibition</td>
-                            <td>Photography Club</td>
-                            <td><span class="status-badge general">Social</span></td>
-                            <td>Jan 25, 2026 - 7:00 AM</td>
-                            <td>Campus Grounds</td>
-                            <td>
-                                <button class="btn-small" onclick="viewEventDetails(3)">View</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Badminton Championship 2026</td>
-                            <td>Badminton Club</td>
-                            <td><span class="status-badge general">Tournament</span></td>
-                            <td>Jan 28, 2026 - 8:00 AM</td>
-                            <td>Sports Complex</td>
-                            <td>
-                                <button class="btn-small" onclick="viewEventDetails(4)">View</button>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="eventsTableBody"></tbody>
                 </table>
             </div>
         </div>

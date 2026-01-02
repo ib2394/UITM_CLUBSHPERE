@@ -1,214 +1,83 @@
-// student.js - Student Dashboard Functions
-
-// Check authentication on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is authenticated
     const auth = checkAuth();
-    if (!auth || auth.userType !== 'student') {
+    const userEmail = sessionStorage.getItem('userEmail');
+    if (!auth || auth.userType !== 'student' || !userEmail) {
         window.location.href = 'login.html';
         return;
     }
 
-    // Load user information
-    loadStudentProfile();
+    // Initial Data Load
+    loadStudentProfileFromDB(userEmail);
+    loadDashboardStats(userEmail);
+    loadAnnouncements(userEmail);
+    loadExploreClubs();
+    loadMyApplications(userEmail);
 });
 
-/**
- * Load student profile information
- */
-function loadStudentProfile() {
-    const userInfo = loadUserInfo();
-    const studentData = userInfo.studentData;
-
-    if (studentData) {
-        // Update profile display
-        document.getElementById('studentUserName').textContent = studentData.name;
-        document.getElementById('profileName').textContent = studentData.name;
-        document.getElementById('profileEmail').textContent = userInfo.email;
-        document.getElementById('profileStudentId').textContent = 'Student ID: ' + studentData.studentId;
-        document.getElementById('profileFaculty').textContent = getFacultyFullName(studentData.faculty);
-        document.getElementById('profileProgram').textContent = studentData.program;
-        document.getElementById('profileSemester').textContent = studentData.semester;
-
-        // Update edit form
-        document.getElementById('editName').value = studentData.name;
-        document.getElementById('editFaculty').value = studentData.faculty;
-        document.getElementById('editProgram').value = studentData.program;
-        document.getElementById('editSemester').value = studentData.semester;
+async function loadStudentProfileFromDB(email) {
+    const res = await fetch(`http://localhost:3000/api/profile/${email}`);
+    const data = await res.json();
+    if (res.ok) {
+        document.getElementById('studentUserName').textContent = data.USER_NAME;
+        document.getElementById('profileName').textContent = data.USER_NAME;
+        document.getElementById('profileEmail').textContent = data.USER_EMAIL;
+        document.getElementById('profileStudentId').textContent = 'Student ID: ' + data.STUDENT_NUMBER;
+        document.getElementById('profileFaculty').textContent = data.STUDENT_FACULTY;
+        document.getElementById('profileProgram').textContent = data.STUDENT_PROGRAM;
+        document.getElementById('profileSemester').textContent = data.STUDENT_SEMESTER;
     }
 }
 
-/**
- * Get full faculty name from code
- */
-function getFacultyFullName(code) {
-    const faculties = {
-        'FSKM': 'Faculty of Computer and Mathematical Sciences',
-        'FPP': 'Faculty of Business Management',
-        'FPPS': 'Faculty of Administrative Science and Policy Studies',
-        'FKM': 'Faculty of Communication and Media Studies'
-    };
-    return faculties[code] || code;
+async function loadDashboardStats(email) {
+    const res = await fetch(`http://localhost:3000/api/student/stats/${email}`);
+    const stats = await res.json();
+    document.getElementById('statJoinedClubs').textContent = stats.JOINED;
+    document.getElementById('statApps').textContent = stats.APPS;
+    document.getElementById('statEvents').textContent = stats.EVENTS;
 }
 
-/**
- * Show specific student section
- * @param {string} section - Section name to display
- */
+async function loadAnnouncements(email) {
+    const res = await fetch(`http://localhost:3000/api/student/announcements/${email}`);
+    const anncs = await res.json();
+    const container = document.getElementById('dynamicAnnouncements');
+    container.innerHTML = anncs.map(a => `
+        <div class="announcement-item">
+            <div class="announcement-header">
+                <strong>${a.CLUB_NAME}</strong>
+                <span class="date">${new Date(a.ANNC_DATE).toLocaleDateString()}</span>
+            </div>
+            <p>${a.ANNC_TITLE}</p>
+        </div>`).join('');
+}
+
+async function loadExploreClubs() {
+    const res = await fetch(`http://localhost:3000/api/student/clubs`);
+    const clubs = await res.json();
+    const grid = document.getElementById('clubsGrid');
+    grid.innerHTML = clubs.map(c => `
+        <div class="club-card" data-category="${c.CATEGORY_NAME ? c.CATEGORY_NAME.toLowerCase() : 'none'}">
+            <div class="club-card-header"><h3>${c.CLUB_NAME}</h3><span class="club-category">${c.CATEGORY_NAME}</span></div>
+            <div class="club-card-body"><p><strong>Advisor:</strong> ${c.ADVISOR_NAME}</p></div>
+            <div class="club-card-footer"><button class="btn-primary" onclick="alert('Applied!')">Apply Now</button></div>
+        </div>`).join('');
+}
+
+async function loadMyApplications(email) {
+    const res = await fetch(`http://localhost:3000/api/student/applications/${email}`);
+    const apps = await res.json();
+    const tbody = document.getElementById('studentApplicationsTableBody');
+    tbody.innerHTML = apps.map(a => `
+        <tr>
+            <td>${a.CLUB_NAME}</td>
+            <td>${new Date(a.APP_DATE).toLocaleDateString()}</td>
+            <td><span class="status-badge ${a.APPLICATION_STATUS.toLowerCase()}">${a.APPLICATION_STATUS}</span></td>
+            <td><button class="btn-small btn-danger">Cancel</button></td>
+        </tr>`).join('');
+}
+
 function showStudentSection(section) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.content-section');
-    sections.forEach(s => s.classList.remove('active'));
-
-    // Remove active class from all nav links
-    const navLinks = document.querySelectorAll('.nav-menu a');
-    navLinks.forEach(link => link.classList.remove('active'));
-
-    // Show selected section
-    const sectionId = 'student' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section';
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
-
-    // Update page title
-    const titles = {
-        'dashboard': 'Dashboard',
-        'explore': 'Explore Clubs',
-        'myApplications': 'My Applications',
-        'profile': 'Profile'
-    };
-    document.getElementById('studentPageTitle').textContent = titles[section] || 'Dashboard';
-
-    // Update active nav link
-    event.target.classList.add('active');
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-menu a').forEach(link => link.classList.remove('active'));
+    document.getElementById('student' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section').classList.add('active');
+    document.getElementById('studentPageTitle').textContent = section.charAt(0).toUpperCase() + section.slice(1);
 }
-
-/**
- * Search clubs
- */
-function searchClubs() {
-    const searchTerm = document.getElementById('clubSearchInput').value.toLowerCase();
-    const clubCards = document.querySelectorAll('.club-card');
-
-    clubCards.forEach(card => {
-        const clubName = card.querySelector('h3').textContent.toLowerCase();
-        if (clubName.includes(searchTerm)) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-/**
- * Filter clubs by category
- * @param {string} category - Category to filter by
- */
-function filterByCategory(category) {
-    const clubCards = document.querySelectorAll('.club-card');
-    const categoryBtns = document.querySelectorAll('.category-btn');
-
-    // Update active button
-    categoryBtns.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-
-    // Filter clubs
-    clubCards.forEach(card => {
-        if (category === 'all' || card.dataset.category === category) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-}
-
-/**
- * Apply to join a club
- * @param {number} clubId - ID of the club
- */
-function applyToClub(clubId) {
-    if (confirm('Do you want to apply to join this club?')) {
-        alert('Application submitted successfully! Please wait for approval from the club admin.');
-        // In real app, this would send request to backend
-    }
-}
-
-/**
- * View club details
- * @param {number} clubId - ID of the club
- */
-function viewClubDetails(clubId) {
-    alert('Club details page would open here. This will be implemented with backend integration.');
-    // In real app, this would open a modal or navigate to club details page
-}
-
-/**
- * Cancel application
- * @param {number} applicationId - ID of the application
- */
-function cancelApplication(applicationId) {
-    if (confirm('Are you sure you want to cancel this application?')) {
-        alert('Application cancelled successfully!');
-        // In real app, this would send request to backend
-        // Refresh the applications table
-    }
-}
-
-/**
- * View club from applications
- * @param {number} clubId - ID of the club
- */
-function viewClub(clubId) {
-    alert('Club page would open here.');
-    // In real app, navigate to club page
-}
-
-/**
- * Toggle edit profile form
- */
-function toggleEditProfile() {
-    const editForm = document.getElementById('editProfileForm');
-    const profileDetails = document.querySelector('.profile-details');
-
-    if (editForm.style.display === 'none' || !editForm.style.display) {
-        editForm.style.display = 'block';
-        profileDetails.style.display = 'none';
-    } else {
-        editForm.style.display = 'none';
-        profileDetails.style.display = 'grid';
-    }
-}
-
-/**
- * Save profile changes
- * @param {Event} event - Form submit event
- */
-function saveProfile(event) {
-    event.preventDefault();
-
-    const name = document.getElementById('editName').value;
-    const faculty = document.getElementById('editFaculty').value;
-    const program = document.getElementById('editProgram').value;
-    const semester = document.getElementById('editSemester').value;
-
-    // Update student data in session
-    const userInfo = loadUserInfo();
-    const studentData = userInfo.studentData;
-    studentData.name = name;
-    studentData.faculty = faculty;
-    studentData.program = program;
-    studentData.semester = semester;
-
-    sessionStorage.setItem('studentData', JSON.stringify(studentData));
-
-    // Update display
-    loadStudentProfile();
-
-    // Hide edit form
-    toggleEditProfile();
-
-    alert('Profile updated successfully!');
-}
-
-// Auth functions are loaded from auth.js

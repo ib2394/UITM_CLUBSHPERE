@@ -1,4 +1,3 @@
-<!-- student-dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +17,7 @@
             <li><a href="#" onclick="showStudentSection('explore')">🔍 Explore Clubs</a></li>
             <li><a href="#" onclick="showStudentSection('myApplications')">📋 My Applications</a></li>
             <li><a href="#" onclick="showStudentSection('profile')">👤 Profile</a></li>
-            <li><a href="#" onclick="window.location.href='login.html'">🚪 Logout</a></li><!--<li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>-->
+            <li><a href="#" onclick="handleLogout()">🚪 Logout</a></li>
         </ul>
     </nav>
 
@@ -26,33 +25,32 @@
         <div class="top-bar">
             <h1 id="studentPageTitle">Dashboard</h1>
             <div class="user-info-top">
-                <span id="studentUserName">Student Name</span>
+                <span id="studentUserName">Loading...</span>
                 <span class="user-badge">Student</span>
             </div>
         </div>
 
-        <!-- Dashboard Section -->
         <div id="studentDashboardSection" class="content-section active">
             <div class="dashboard-cards">
                 <div class="stat-card">
                     <div class="stat-icon">🎯</div>
                     <div class="stat-info">
                         <h3>Joined Clubs</h3>
-                        <p class="stat-number">3</p>
+                        <p class="stat-number" id="statJoinedClubs">0</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">📅</div>
                     <div class="stat-info">
                         <h3>Upcoming Events</h3>
-                        <p class="stat-number">5</p>
+                        <p class="stat-number" id="statEvents">0</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">📋</div>
                     <div class="stat-info">
                         <h3>Applications</h3>
-                        <p class="stat-number">2</p>
+                        <p class="stat-number" id="statApps">0</p>
                     </div>
                 </div>
             </div>
@@ -60,225 +58,52 @@
             <div class="dashboard-grid">
                 <div class="dashboard-section">
                     <h2>📢 Recent Announcements</h2>
-                    <div class="announcement-list">
-                        <div class="announcement-item">
-                            <div class="announcement-header">
-                                <strong>Computer Science Society</strong>
-                                <span class="date">Dec 20, 2025</span>
-                            </div>
-                            <p>Web Development Bootcamp registration is now open! Limited seats available.</p>
-                        </div>
-                        <div class="announcement-item">
-                            <div class="announcement-header">
-                                <strong>Debate Club</strong>
-                                <span class="date">Dec 18, 2025</span>
-                            </div>
-                            <p>Reminder: Inter-Faculty Debate Championship starts on January 20th.</p>
-                        </div>
-                    </div>
+                    <div class="announcement-list" id="dynamicAnnouncements"></div>
                 </div>
-
                 <div class="dashboard-section">
                     <h2>🎉 Upcoming Events</h2>
-                    <div class="event-list-simple">
-                        <div class="event-item-simple">
-                            <div class="event-date-badge">
-                                <div class="date-day">15</div>
-                                <div class="date-month">JAN</div>
-                            </div>
-                            <div class="event-info">
-                                <strong>Web Development Bootcamp</strong>
-                                <p>Computer Science Society • 2:00 PM</p>
-                            </div>
-                        </div>
-                        <div class="event-item-simple">
-                            <div class="event-date-badge">
-                                <div class="date-day">20</div>
-                                <div class="date-month">JAN</div>
-                            </div>
-                            <div class="event-info">
-                                <strong>Debate Championship</strong>
-                                <p>Debate Club • 9:00 AM</p>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="event-list-simple" id="dynamicEvents"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Explore Clubs Section -->
         <div id="studentExploreSection" class="content-section">
             <div class="search-bar">
                 <input type="text" placeholder="Search clubs..." id="clubSearchInput">
                 <button class="btn-primary" onclick="searchClubs()">Search</button>
             </div>
-
-            <div class="category-filters">
+            <div class="category-filters" id="catFilters">
                 <button class="category-btn active" onclick="filterByCategory('all')">All Clubs</button>
-                <button class="category-btn" onclick="filterByCategory('academic')">Academic</button>
-                <button class="category-btn" onclick="filterByCategory('sports')">Sports</button>
-                <button class="category-btn" onclick="filterByCategory('arts')">Arts & Culture</button>
-                <button class="category-btn" onclick="filterByCategory('technology')">Technology</button>
             </div>
-
-            <div class="clubs-grid" id="clubsGrid">
-                <!-- Club Card 1 -->
-                <div class="club-card" data-category="technology">
-                    <div class="club-card-header">
-                        <h3>Computer Science Society</h3>
-                        <span class="club-category">Technology</span>
-                    </div>
-                    <div class="club-card-body">
-                        <p><strong>Mission:</strong> Empowering students with cutting-edge technology skills.</p>
-                        <p><strong>Members:</strong> 45 students</p>
-                        <p><strong>Advisor:</strong> Dr. Ahmad Abdullah</p>
-                    </div>
-                    <div class="club-card-footer">
-                        <button class="btn-primary" onclick="applyToClub(1)">Apply Now</button>
-                        <button class="btn-secondary" onclick="viewClubDetails(1)">View Details</button>
-                    </div>
-                </div>
-
-                <!-- Club Card 2 -->
-                <div class="club-card" data-category="academic">
-                    <div class="club-card-header">
-                        <h3>Debate & Public Speaking Club</h3>
-                        <span class="club-category">Academic</span>
-                    </div>
-                    <div class="club-card-body">
-                        <p><strong>Mission:</strong> Developing critical thinking and eloquent communication.</p>
-                        <p><strong>Members:</strong> 32 students</p>
-                        <p><strong>Advisor:</strong> Prof. Sarah Lee</p>
-                    </div>
-                    <div class="club-card-footer">
-                        <button class="btn-primary" onclick="applyToClub(2)">Apply Now</button>
-                        <button class="btn-secondary" onclick="viewClubDetails(2)">View Details</button>
-                    </div>
-                </div>
-
-                <!-- Club Card 3 -->
-                <div class="club-card" data-category="arts">
-                    <div class="club-card-header">
-                        <h3>Photography Club</h3>
-                        <span class="club-category">Arts & Culture</span>
-                    </div>
-                    <div class="club-card-body">
-                        <p><strong>Mission:</strong> Capturing moments through visual storytelling.</p>
-                        <p><strong>Members:</strong> 28 students</p>
-                        <p><strong>Advisor:</strong> Mr. Rahman Ibrahim</p>
-                    </div>
-                    <div class="club-card-footer">
-                        <button class="btn-primary" onclick="applyToClub(3)">Apply Now</button>
-                        <button class="btn-secondary" onclick="viewClubDetails(3)">View Details</button>
-                    </div>
-                </div>
-
-                <!-- Club Card 4 -->
-                <div class="club-card" data-category="sports">
-                    <div class="club-card-header">
-                        <h3>Badminton Club</h3>
-                        <span class="club-category">Sports</span>
-                    </div>
-                    <div class="club-card-body">
-                        <p><strong>Mission:</strong> Promoting fitness through badminton.</p>
-                        <p><strong>Members:</strong> 38 students</p>
-                        <p><strong>Advisor:</strong> Coach Faizal Hassan</p>
-                    </div>
-                    <div class="club-card-footer">
-                        <button class="btn-primary" onclick="applyToClub(4)">Apply Now</button>
-                        <button class="btn-secondary" onclick="viewClubDetails(4)">View Details</button>
-                    </div>
-                </div>
-            </div>
+            <div class="clubs-grid" id="clubsGrid"></div>
         </div>
 
-        <!-- My Applications Section -->
-        <div id="studentApplicationsSection" class="content-section">
+        <div id="studentMyApplicationsSection" class="content-section">
             <div class="table-container">
                 <table class="data-table">
                     <thead>
-                        <tr>
-                            <th>Club Name</th>
-                            <th>Applied Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
+                        <tr><th>Club Name</th><th>Applied Date</th><th>Status</th><th>Actions</th></tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Computer Science Society</td>
-                            <td>Dec 15, 2025</td>
-                            <td><span class="status-badge pending">Pending</span></td>
-                            <td><button class="btn-small btn-danger" onclick="cancelApplication(1)">Cancel</button></td>
-                        </tr>
-                        <tr>
-                            <td>Photography Club</td>
-                            <td>Dec 10, 2025</td>
-                            <td><span class="status-badge approved">Approved</span></td>
-                            <td><button class="btn-small" onclick="viewClub(2)">View Club</button></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="studentApplicationsTableBody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Profile Section -->
         <div id="studentProfileSection" class="content-section">
             <div class="profile-container">
                 <div class="profile-header">
                     <div class="profile-avatar">👤</div>
                     <div class="profile-info">
-                        <h2 id="profileName">Muhammad Hakim Bin Mohd Zabidi</h2>
-                        <p id="profileEmail">2024974281@student.uitm.edu.my</p>
-                        <p id="profileStudentId">Student ID: 2024974281</p>
+                        <h2 id="profileName">Loading...</h2>
+                        <p id="profileEmail"></p>
+                        <p id="profileStudentId"></p>
                     </div>
                     <button class="btn-primary" onclick="toggleEditProfile()">Edit Profile</button>
                 </div>
-
                 <div class="profile-details">
-                    <div class="detail-group">
-                        <label>Faculty</label>
-                        <p id="profileFaculty">Faculty of Computer and Mathematical Sciences</p>
-                    </div>
-                    <div class="detail-group">
-                        <label>Program</label>
-                        <p id="profileProgram">CS264</p>
-                    </div>
-                    <div class="detail-group">
-                        <label>Semester</label>
-                        <p id="profileSemester">3</p>
-                    </div>
-                </div>
-
-                <!-- Edit Profile Form -->
-                <div id="editProfileForm" class="edit-form" style="display: none;">
-                    <h3>Edit Profile</h3>
-                    <form onsubmit="saveProfile(event)">
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" id="editName" value="Muhammad Hakim Bin Mohd Zabidi">
-                        </div>
-                        <div class="form-group">
-                            <label>Faculty</label>
-                            <select id="editFaculty">
-                                <option value="FSKM" selected>Faculty of Computer and Mathematical Sciences</option>
-                                <option value="FPP">Faculty of Business Management</option>
-                                <option value="FPPS">Faculty of Administrative Science and Policy Studies</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Program</label>
-                            <input type="text" id="editProgram" value="CS264">
-                        </div>
-                        <div class="form-group">
-                            <label>Semester</label>
-                            <input type="number" id="editSemester" value="3">
-                        </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">Save Changes</button>
-                            <button type="button" class="btn-secondary" onclick="toggleEditProfile()">Cancel</button>
-                        </div>
-                    </form>
+                    <div class="detail-group"><label>Faculty</label><p id="profileFaculty"></p></div>
+                    <div class="detail-group"><label>Program</label><p id="profileProgram"></p></div>
+                    <div class="detail-group"><label>Semester</label><p id="profileSemester"></p></div>
                 </div>
             </div>
         </div>
