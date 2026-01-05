@@ -30,15 +30,36 @@ app.post('/api/login', async (req, res) => {
   try {
     const { user_email, user_password, user_type } = req.body;
     connection = await oracledb.getConnection(dbConfig);
-    const sql = `SELECT USER_ID, USER_NAME, USER_TYPE, USER_EMAIL FROM USERS 
-                 WHERE USER_EMAIL = :email AND USER_PASSWORD = :pass AND USER_TYPE = :type`;
-    const result = await connection.execute(sql, [user_email, user_password, user_type]);
+
+    let sql, binds;
+
+    if (user_type === 'club_admin') {
+      // Club Admins login using CLUB_EMAIL from CLUBS table
+      sql = `SELECT u.USER_ID, u.USER_NAME, u.USER_TYPE, c.CLUB_EMAIL 
+             FROM USERS u 
+             JOIN CLUBS c ON u.USER_NAME = c.ADVISOR_NAME
+             WHERE c.CLUB_EMAIL = :email 
+             AND u.USER_PASSWORD = :pass 
+             AND u.USER_TYPE = 'club_admin'`;
+      binds = [user_email, user_password];
+    } else {
+      // Students and Admins login via USER_EMAIL
+      sql = `SELECT USER_ID, USER_NAME, USER_TYPE, USER_EMAIL 
+             FROM USERS 
+             WHERE USER_EMAIL = :email 
+             AND USER_PASSWORD = :pass 
+             AND USER_TYPE = :type`;
+      binds = [user_email, user_password, user_type];
+    }
+
+    const result = await connection.execute(sql, binds);
+
     if (result.rows.length > 0) {
       res.status(200).send({
         user: { id: result.rows[0][0], name: result.rows[0][1], type: result.rows[0][2], email: result.rows[0][3] }
       });
     } else {
-      res.status(401).send({ message: "Invalid credentials" });
+      res.status(401).send({ message: "Invalid credentials for the selected role" });
     }
   } catch (err) { res.status(500).send(err.message); }
   finally { if (connection) await connection.close(); }
@@ -49,13 +70,23 @@ app.post('/api/register', async (req, res) => {
   try {
     const { user_name, user_email, user_password, user_type, student_number, student_program, student_faculty, student_semester } = req.body;
     connection = await oracledb.getConnection(dbConfig);
+
+    // Registration is solely for students in this implementation
     const userSql = `INSERT INTO USERS (USER_ID, USER_NAME, USER_PASSWORD, USER_EMAIL, IS_ACTIVE, USER_TYPE) 
                      VALUES (user_seq.NEXTVAL, :name, :pass, :email, 1, :type) RETURNING USER_ID INTO :id`;
-    const result = await connection.execute(userSql, { name: user_name, pass: user_password, email: user_email, type: user_type, id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } });
-    if (user_type !== 'admin') {
-        const infoSql = `INSERT INTO STUDENT_INFO (USER_ID, STUDENT_NUMBER, STUDENT_PROGRAM, STUDENT_FACULTY, STUDENT_SEMESTER) VALUES (:id, :sNum, :prog, :fac, :sem)`;
-        await connection.execute(infoSql, { id: result.outBinds.id[0], sNum: student_number, prog: student_program, fac: student_faculty, sem: student_semester });
-    }
+    
+    const result = await connection.execute(userSql, { 
+        name: user_name, pass: user_password, email: user_email, type: user_type, 
+        id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } 
+    });
+
+    const infoSql = `INSERT INTO STUDENT_INFO (USER_ID, STUDENT_NUMBER, STUDENT_PROGRAM, STUDENT_FACULTY, STUDENT_SEMESTER) 
+                     VALUES (:id, :sNum, :prog, :fac, :sem)`;
+    
+    await connection.execute(infoSql, { 
+        id: result.outBinds.id[0], sNum: student_number, prog: student_program, fac: student_faculty, sem: student_semester 
+    });
+
     await connection.commit();
     res.status(201).send({ message: "Success" });
   } catch (err) { res.status(500).send(err.message); }
@@ -88,132 +119,6 @@ app.get('/api/student/stats/:email', async (req, res) => {
             FROM DUAL`;
         const result = await connection.execute(sql, [req.params.email], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows[0]);
-    } catch (err) { res.status(500).send(err.message); }
-    finally { if (connection) await connection.close(); }
-});
-
-app.get('/api/student/announcements/:email', async (req, res) => {
-    let connection;
-    try {
-        connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT a.ANNC_TITLE, a.ANNC_DATE, c.CLUB_NAME
-            FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID
-            JOIN USERS_CLUB uc ON c.CLUB_ID = uc.CLUB_ID JOIN USERS u ON uc.USER_ID = u.USER_ID
-            WHERE u.USER_EMAIL = :email ORDER BY a.ANNC_DATE DESC`;
-        const result = await connection.execute(sql, [req.params.email], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        res.json(result.rows);
-    } catch (err) { res.status(500).send(err.message); }
-    finally { if (connection) await connection.close(); }
-});
-
-app.get('/api/student/clubs', async (req, res) => {
-    let connection;
-    try {
-        connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT c.CLUB_ID, c.CLUB_NAME, c.ADVISOR_NAME, cat.CATEGORY_NAME, c.CLUB_MISSION
-            FROM CLUBS c LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID
-            LEFT JOIN CATEGORY cat ON cc.CATEGORY_ID = cat.CATEGORY_ID`;
-        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        res.json(result.rows);
-    } catch (err) { res.status(500).send(err.message); }
-    finally { if (connection) await connection.close(); }
-});
-
-app.get('/api/student/applications/:email', async (req, res) => {
-    let connection;
-    try {
-        connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT c.CLUB_NAME, a.APPLICATION_STATUS, SYSDATE as APP_DATE
-            FROM APPLICATION a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID
-            JOIN USERS u ON a.USER_ID = u.USER_ID WHERE u.USER_EMAIL = :email`;
-        const result = await connection.execute(sql, [req.params.email], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        res.json(result.rows);
-    } catch (err) { res.status(500).send(err.message); }
-    finally { if (connection) await connection.close(); }
-});
-
-/* --- SECTION 3: ADMIN DASHBOARD APIS --- */
-
-app.get('/api/admin/clubs', async (req, res) => {
-  let connection;
-  try {
-    connection = await oracledb.getConnection(dbConfig);
-    const sql = `SELECT c.CLUB_ID, c.CLUB_NAME, c.ADVISOR_NAME, cat.CATEGORY_NAME,
-                (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.CLUB_ID = c.CLUB_ID) as MEMBER_COUNT
-                FROM CLUBS c LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID
-                LEFT JOIN CATEGORY cat ON cc.CATEGORY_ID = cat.CATEGORY_ID ORDER BY c.CLUB_NAME`;
-    const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-    res.json(result.rows);
-  } catch (err) { res.status(500).send(err.message); }
-  finally { if (connection) await connection.close(); }
-});
-
-app.get('/api/admin/students', async (req, res) => {
-  let connection;
-  try {
-    connection = await oracledb.getConnection(dbConfig);
-    const sql = `SELECT u.USER_ID, u.USER_NAME, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM,
-                (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.USER_ID = u.USER_ID) as CLUBS_JOINED
-                FROM USERS u JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE u.USER_TYPE = 'student'`;
-    const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-    res.json(result.rows);
-  } catch (err) { res.status(500).send(err.message); }
-  finally { if (connection) await connection.close(); }
-});
-
-app.post('/api/admin/clubs', async (req, res) => {
-    let connection;
-    try {
-        const { club_name, category_id, club_mission, club_vision, club_email, club_phone, advisor_name, advisor_email, advisor_phone } = req.body;
-        connection = await oracledb.getConnection(dbConfig);
-        const sql = `INSERT INTO CLUBS (CLUB_ID, CLUB_NAME, CLUB_MISSION, CLUB_VISION, CLUB_EMAIL, CLUB_PHONE, ADVISOR_NAME, ADVISOR_EMAIL, ADVISOR_PHONE) 
-                     VALUES (club_seq.NEXTVAL, :name, :mission, :vision, :email, :phone, :adv, :adv_e, :adv_p) RETURNING CLUB_ID INTO :id`;
-        const result = await connection.execute(sql, { name: club_name, mission: club_mission, vision: club_vision, email: club_email, phone: club_phone, adv: advisor_name, adv_e: advisor_email, adv_p: advisor_phone, id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } });
-        await connection.execute(`INSERT INTO CLUB_CATEGORY (CLUB_CAT_ID, CLUB_ID, CATEGORY_ID) VALUES (club_cat_seq.NEXTVAL, :cid, :catid)`, [result.outBinds.id[0], category_id]);
-        await connection.commit();
-        res.status(201).send({ message: "Club added" });
-    } catch (err) { res.status(500).send(err.message); }
-    finally { if (connection) await connection.close(); }
-});
-
-app.delete('/api/admin/clubs/:id', async (req, res) => {
-  let connection;
-  try {
-      const id = req.params.id;
-      connection = await oracledb.getConnection(dbConfig);
-      await connection.execute(`DELETE FROM CLUB_CATEGORY WHERE CLUB_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM USERS_CLUB WHERE CLUB_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM ANNOUNCEMENT WHERE CLUB_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM EVENTS WHERE CLUB_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM APPLICATION WHERE CLUB_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM CLUBS WHERE CLUB_ID = :id`, [id]);
-      await connection.commit();
-      res.send({ message: "Deleted" });
-  } catch (err) { res.status(500).send({ error: err.message }); }
-  finally { if (connection) await connection.close(); }
-});
-
-app.delete('/api/admin/students/:id', async (req, res) => {
-  let connection;
-  try {
-      const id = req.params.id;
-      connection = await oracledb.getConnection(dbConfig);
-      await connection.execute(`DELETE FROM USERS_CLUB WHERE USER_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM APPLICATION WHERE USER_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM STUDENT_INFO WHERE USER_ID = :id`, [id]);
-      await connection.execute(`DELETE FROM USERS WHERE USER_ID = :id`, [id]);
-      await connection.commit();
-      res.send({ message: "Deleted" });
-  } catch (err) { res.status(500).send({ error: err.message }); }
-  finally { if (connection) await connection.close(); }
-});
-
-app.get('/api/categories', async (req, res) => {
-    let connection;
-    try {
-        connection = await oracledb.getConnection(dbConfig);
-        const result = await connection.execute('SELECT * FROM CATEGORY', [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
-        res.json(result.rows);
     } catch (err) { res.status(500).send(err.message); }
     finally { if (connection) await connection.close(); }
 });
