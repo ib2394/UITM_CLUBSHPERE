@@ -110,7 +110,7 @@ async function addNewClub(event) {
         club_phone: document.getElementById('newClubPhone').value,
         advisor_name: document.getElementById('newClubAdvisor').value,
         advisor_email: document.getElementById('newClubAdvisorEmail').value,
-        advisor_phone: "" // Default empty for this setup
+        advisor_phone: "" 
     };
 
     const res = await fetch(`${API_URL}/admin/clubs`, {

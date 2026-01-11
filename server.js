@@ -159,4 +159,113 @@ app.delete('/api/student/application/:id', async (req, res) => {
     finally { if (connection) await connection.close(); }
 });
 
+/* --- SECTION 4: ADMIN API (NEW) --- */
+
+// Get Categories for Dropdown
+app.get('/api/categories', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const result = await connection.execute(`SELECT CATEGORY_ID, CATEGORY_NAME FROM CATEGORY`, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        res.json(result.rows);
+    } catch (err) { res.status(500).send({ message: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
+// Get All Clubs (Admin View)
+app.get('/api/admin/clubs', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const sql = `SELECT c.CLUB_ID, c.CLUB_NAME, c.ADVISOR_NAME, c.CLUB_EMAIL, cat.CATEGORY_NAME, 
+                    (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.CLUB_ID = c.CLUB_ID) as MEMBER_COUNT 
+                    FROM CLUBS c 
+                    LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID 
+                    LEFT JOIN CATEGORY cat ON cc.CATEGORY_ID = cat.CATEGORY_ID`;
+        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        res.json(result.rows);
+    } catch (err) { res.status(500).send({ message: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
+// Add New Club
+app.post('/api/admin/clubs', async (req, res) => {
+    let connection;
+    try {
+        const { club_name, category_id, advisor_name, club_email } = req.body;
+        connection = await oracledb.getConnection(dbConfig);
+        
+        // 1. Insert into CLUBS
+        const sql = `INSERT INTO CLUBS (CLUB_ID, CLUB_NAME, CLUB_EMAIL, ADVISOR_NAME) 
+                     VALUES (club_seq.NEXTVAL, :name, :email, :adv) RETURNING CLUB_ID INTO :id`;
+        
+        const result = await connection.execute(sql, { 
+            name: club_name, email: club_email, adv: advisor_name, 
+            id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } 
+        });
+
+        // 2. Insert into CLUB_CATEGORY
+        const newClubId = result.outBinds.id[0];
+        if (category_id) {
+            await connection.execute(`INSERT INTO CLUB_CATEGORY (CLUB_ID, CATEGORY_ID) VALUES (:cid, :catid)`, 
+                { cid: newClubId, catid: category_id });
+        }
+
+        await connection.commit();
+        res.json({ message: "Club added successfully" });
+    } catch (err) { res.status(500).send({ message: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
+// Delete Club
+app.delete('/api/admin/clubs/:id', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const id = req.params.id;
+        // Delete child records first to avoid constraint errors
+        await connection.execute(`DELETE FROM CLUB_CATEGORY WHERE CLUB_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM USERS_CLUB WHERE CLUB_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM APPLICATION WHERE CLUB_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM ANNOUNCEMENT WHERE CLUB_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM EVENTS WHERE CLUB_ID = :id`, [id]);
+        // Finally delete club
+        await connection.execute(`DELETE FROM CLUBS WHERE CLUB_ID = :id`, [id]);
+        await connection.commit();
+        res.json({ message: "Club deleted" });
+    } catch (err) { res.status(500).send({ message: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
+// Get All Students
+app.get('/api/admin/students', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const sql = `SELECT u.USER_ID, u.USER_NAME, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, 
+                    (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.USER_ID = u.USER_ID) as CLUBS_JOINED 
+                    FROM USERS u JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID 
+                    WHERE u.USER_TYPE = 'student'`;
+        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        res.json(result.rows);
+    } catch (err) { res.status(500).send({ message: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
+// Delete Student
+app.delete('/api/admin/students/:id', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const id = req.params.id;
+        await connection.execute(`DELETE FROM APPLICATION WHERE USER_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM USERS_CLUB WHERE USER_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM STUDENT_INFO WHERE USER_ID = :id`, [id]);
+        await connection.execute(`DELETE FROM USERS WHERE USER_ID = :id`, [id]);
+        await connection.commit();
+        res.json({ message: "Student deleted" });
+    } catch (err) { res.status(500).send({ message: err.message }); }
+    finally { if (connection) await connection.close(); }
+});
+
 app.listen(3000, () => console.log(`🚀 Server running at http://localhost:3000`));
