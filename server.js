@@ -873,18 +873,21 @@ app.post('/api/admin/clubs', async (req, res) => {
         /* ===============================
            4. LINK USER ↔ CLUB
         =============================== */
+        /* ===============================
+   4. LINK USER ↔ CLUB
+=============================== */
         await connection.execute(
             `
-      INSERT INTO USERS_CLUB (
-        USER_CLUB_ID,
-        USER_ID,
-        CLUB_ID
-      ) VALUES (
-        user_club_seq.NEXTVAL,
-        :user_id,
-        :club_id
-      )
-      `,
+            INSERT INTO USERS_CLUB (
+                USER_CLUB_ID,
+                USER_ID,
+                CLUB_ID
+            ) VALUES (
+                user_club_seq.NEXTVAL,
+                :user_id,
+                :club_id
+            )
+            `,
             {
                 user_id: userId,
                 club_id: clubId
@@ -1292,6 +1295,7 @@ app.get('/api/club-admin/events/:email', async (req, res) => {
 });
 
 // Add event
+
 app.post('/api/club-admin/events', async (req, res) => {
     let connection;
     try {
@@ -1308,13 +1312,14 @@ app.post('/api/club-admin/events', async (req, res) => {
             SELECT uc.CLUB_ID
             FROM USERS_CLUB uc
             JOIN USERS u ON uc.USER_ID = u.USER_ID
-            WHERE LOWER(u.USER_EMAIL) = LOWER(:email)
+            WHERE LOWER(u.USER_EMAIL) = LOWER(:adminEmail)
               AND u.USER_TYPE = 'club_admin'
         `;
 
-        const clubIdResult = await connection.execute(clubIdSql, { email }, {
+        const clubIdResult = await connection.execute(clubIdSql, { adminEmail: email }, {
             outFormat: oracledb.OUT_FORMAT_OBJECT
-        });
+        }
+        );
 
         if (clubIdResult.rows.length === 0) {
             return res.status(404).json({ message: "Club not found" });
@@ -1322,27 +1327,27 @@ app.post('/api/club-admin/events', async (req, res) => {
 
         const clubId = clubIdResult.rows[0].CLUB_ID;
 
-        // Insert event
+        // Insert event - Use non-reserved keywords for bind variables
         const insertSql = `
             INSERT INTO EVENTS (EVENT_ID, EVENT_NAME, EVENT_DESC, EVENT_TYPE, EVENT_DATETIME, CLUB_ID)
-            VALUES (event_seq.NEXTVAL, :name, :desc, :type, TO_DATE(:dt, 'YYYY-MM-DD"T"HH24:MI'), :clubId)
-            RETURNING EVENT_ID INTO :id
+            VALUES (event_seq.NEXTVAL, :eventName, :eventDesc, :eventType, TO_DATE(:eventDateTime, 'YYYY-MM-DD"T"HH24:MI:SS'), :clubId)
+            RETURNING EVENT_ID INTO :newEventId
         `;
 
         const result = await connection.execute(insertSql, {
-            name,
-            desc: description,
-            type,
-            dt: datetime,
-            clubId,
-            id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
+            eventName: name,
+            eventDesc: description,
+            eventType: type,
+            eventDateTime: datetime,
+            clubId: clubId,
+            newEventId: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
         });
 
         await connection.commit();
 
         res.status(201).json({
             message: "Event created successfully",
-            eventId: result.outBinds.id[0]
+            eventId: result.outBinds.newEventId[0]
         });
     } catch (err) {
         console.error('Event creation error:', err);
@@ -1499,70 +1504,92 @@ app.get('/api/club-admin/applicants/:email', async (req, res) => {
 // Approve applicant
 app.put('/api/club-admin/applicants/:id/approve', async (req, res) => {
     let connection;
+
     try {
         connection = await oracledb.getConnection(dbConfig);
+        const applicationId = req.params.id;
 
-        // 1. Get application details
+        // 1. Get the application details
         const appResult = await connection.execute(
             `SELECT USER_ID, CLUB_ID 
              FROM APPLICATION 
-             WHERE APPLICATION_ID = :id AND APPLICATION_STATUS = 'Pending'`,
-            { id: req.params.id },
+             WHERE APPLICATION_ID = :applicationId 
+             AND APPLICATION_STATUS = 'Pending'`,
+            { applicationId: applicationId },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
 
         if (appResult.rows.length === 0) {
-            return res.status(404).json({ message: "Application not found or already processed" });
+            return res.status(404).json({
+                message: "Application not found or already processed"
+            });
         }
 
-        const { USER_ID, CLUB_ID } = appResult.rows[0];
+        const userId = appResult.rows[0].USER_ID;
+        const clubId = appResult.rows[0].CLUB_ID;
 
-        // 2. Check if already a member
+        // 2. Check if user is already a member
         const memberCheck = await connection.execute(
-            `SELECT USER_CLUB_ID FROM USERS_CLUB WHERE USER_ID = :uid AND CLUB_ID = :cid`,
-            { uid: USER_ID, cid: CLUB_ID },
+            `SELECT USER_CLUB_ID 
+             FROM USERS_CLUB 
+             WHERE USER_ID = :userId 
+             AND CLUB_ID = :clubId`,
+            { userId: userId, clubId: clubId },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
 
         if (memberCheck.rows.length > 0) {
-            return res.status(409).json({ message: "User is already a member" });
+            return res.status(409).json({
+                message: "User is already a member"
+            });
         }
 
-        // 3. Get next sequence value
-        const seqResult = await connection.execute(
-            `SELECT user_club_seq.NEXTVAL AS next_id FROM DUAL`,
-            {},
-            { outFormat: oracledb.OUT_FORMAT_OBJECT }
-        );
-
-        const userClubId = 'UC' + seqResult.rows[0].NEXT_ID;
-
-        // 4. Update application status
+        // 3. Update application status to Approved
         await connection.execute(
-            `UPDATE APPLICATION SET APPLICATION_STATUS = 'Approved' WHERE APPLICATION_ID = :id`,
-            { id: req.params.id }
+            `UPDATE APPLICATION 
+             SET APPLICATION_STATUS = 'Approved' 
+             WHERE APPLICATION_ID = :applicationId`,
+            { applicationId: applicationId }
         );
 
-        // 5. Add to USERS_CLUB
+        // 4. Add user to the club (now with correct NUMBER type)
         await connection.execute(
             `INSERT INTO USERS_CLUB (USER_CLUB_ID, USER_ID, CLUB_ID)
-             VALUES (:ucid, :uid, :cid)`,
-            { ucid: userClubId, uid: USER_ID, cid: CLUB_ID }
+             VALUES (user_club_seq.NEXTVAL, :userId, :clubId)`,
+            { userId: userId, clubId: clubId }
         );
 
-        // 6. Commit transaction
+        // 5. Commit all changes
         await connection.commit();
 
-        res.json({ message: "Application approved and member added successfully" });
+        res.json({
+            message: "Application approved and member added successfully"
+        });
 
     } catch (err) {
         console.error('Approval error:', err);
-        if (connection) await connection.rollback();
-        res.status(500).json({ message: "Error approving application" });
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackErr) {
+                console.error('Rollback error:', rollbackErr);
+            }
+        }
+        res.status(500).json({
+            message: "Error approving application",
+            error: err.message
+        });
     } finally {
-        if (connection) await connection.close();
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (closeErr) {
+                console.error('Connection close error:', closeErr);
+            }
+        }
     }
 });
+
 
 
 // Reject applicant
