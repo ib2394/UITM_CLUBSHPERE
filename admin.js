@@ -154,3 +154,138 @@ async function addNewClub(event) {
         alert('❌ ' + result.message);
     }
 }
+
+async function loadAnnouncements() {
+    const response = await fetch(`${API_URL}/admin/announcements`);
+    const announcements = await response.json();
+    const tableBody = document.getElementById('announcementsTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = announcements.map(ann => {
+            const date = new Date(ann.ANNC_DATE).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            return `
+            <tr>
+                <td>${ann.ANNC_TITLE}</td>
+                <td>${ann.CLUB_NAME || 'N/A'}</td>
+                <td><span class="status-badge ${ann.ANNC_TYPE?.toLowerCase() || 'general'}">${ann.ANNC_TYPE || 'General'}</span></td>
+                <td>${date}</td>
+                <td>
+                    <button class="btn-small" onclick="viewAnnouncement(${ann.ANNC_ID}, '${ann.ANNC_TITLE}', '${ann.ANNC_CONTENT}')">View</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+}
+
+async function loadEvents() {
+    const response = await fetch(`${API_URL}/admin/events`);
+    const events = await response.json();
+    const tableBody = document.getElementById('eventsTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = events.map(evt => {
+            const eventDate = new Date(evt.EVENT_DATETIME);
+            const formattedDate = eventDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            const formattedTime = eventDate.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `
+            <tr>
+                <td>${evt.EVENT_NAME}</td>
+                <td>${evt.CLUB_NAME || 'N/A'}</td>
+                <td><span class="status-badge ${evt.EVENT_TYPE?.toLowerCase() || 'workshop'}">${evt.EVENT_TYPE || 'Workshop'}</span></td>
+                <td>${formattedDate} ${formattedTime}</td>
+                <td>${evt.EVENT_DESC?.substring(0, 50) || 'No description'}...</td>
+                <td>
+                    <button class="btn-small" onclick="viewEvent(${evt.EVENT_ID}, '${evt.EVENT_NAME}', '${evt.EVENT_DESC}')">View</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+}
+
+// Add view functions for announcements and events
+function viewAnnouncement(id, title, content) {
+    alert(`📢 ANNOUNCEMENT DETAILS\n\nID: ${id}\nTitle: ${title}\n\nContent:\n${content}`);
+}
+
+function viewEvent(id, name, description) {
+    alert(`📅 EVENT DETAILS\n\nID: ${id}\nName: ${name}\n\nDescription:\n${description || 'No description provided'}`);
+}
+
+function showAdminSection(section) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-menu a').forEach(link => link.classList.remove('active'));
+
+    const targetSection = document.getElementById('admin' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section');
+    if (targetSection) targetSection.classList.add('active');
+
+    document.getElementById('adminPageTitle').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+
+    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+    // Load data for the selected section
+    if (section === 'clubs') loadClubs();
+    if (section === 'students') loadStudents();
+    if (section === 'announcements') loadAnnouncements(); // Add this line
+    if (section === 'events') loadEvents(); // Add this line
+}
+
+async function loadClubAdminInfo() {
+    const userEmail = getUserData('userEmail');
+    const userName = getUserData('userName');
+    console.log('Loading club admin info for:', userEmail); // Debug
+
+    document.getElementById('clubAdminUserName').textContent = userName || userEmail.split('@')[0];
+
+    try {
+        // Get club profile
+        console.log('Fetching club profile from:', `${API_URL}/club-admin/profile/${userEmail}`); // Debug
+        const response = await fetch(`${API_URL}/club-admin/profile/${userEmail}`);
+
+        console.log('Response status:', response.status); // Debug
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const club = await response.json();
+        console.log('Club data received:', club); // Debug
+
+        if (club && club.CLUB_ID) {
+            currentClubId = club.CLUB_ID;
+            currentClubName = club.CLUB_NAME;
+            document.querySelector('.user-badge').textContent = club.CLUB_NAME;
+
+            // Update club profile section
+            document.getElementById('clubMission').textContent = club.CLUB_MISSION || 'Not set';
+            document.getElementById('clubVision').textContent = club.CLUB_VISION || 'Not set';
+            document.getElementById('clubEmail').textContent = club.CLUB_EMAIL || 'Not set';
+            document.getElementById('clubPhone').textContent = club.CLUB_PHONE || 'Not set';
+            document.getElementById('clubAdvisor').textContent = `${club.ADVISOR_NAME || 'Not assigned'} (${club.ADVISOR_EMAIL || 'N/A'})`;
+
+            // Set form values
+            document.getElementById('editClubMission').value = club.CLUB_MISSION || '';
+            document.getElementById('editClubVision').value = club.CLUB_VISION || '';
+            document.getElementById('editClubEmail').value = club.CLUB_EMAIL || '';
+            document.getElementById('editClubPhone').value = club.CLUB_PHONE || '';
+
+            console.log('Club profile loaded successfully'); // Debug
+        } else {
+            console.error('No club data or missing CLUB_ID:', club);
+            alert('Error: No club profile found for your account.');
+        }
+    } catch (error) {
+        console.error('Error loading club info:', error);
+        alert('Error loading club profile. Please check console for details.');
+    }
+}

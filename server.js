@@ -873,9 +873,6 @@ app.post('/api/admin/clubs', async (req, res) => {
         /* ===============================
            4. LINK USER ↔ CLUB
         =============================== */
-        /* ===============================
-   4. LINK USER ↔ CLUB
-=============================== */
         await connection.execute(
             `
             INSERT INTO USERS_CLUB (
@@ -1004,19 +1001,60 @@ app.delete('/api/admin/students/:id', async (req, res) => {
     }
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({
-        message: "Internal server error",
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+/* --- ADMIN: Get all announcements --- */
+app.get('/api/admin/announcements', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+
+        const sql = `
+            SELECT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, 
+                   a.ANNC_DATE, c.CLUB_NAME
+            FROM ANNOUNCEMENT a
+            JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID
+            ORDER BY a.ANNC_DATE DESC
+            FETCH FIRST 50 ROWS ONLY
+        `;
+
+        const result = await connection.execute(sql, [], {
+            outFormat: oracledb.OUT_FORMAT_OBJECT
+        });
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Admin announcements fetch error:', err);
+        res.status(500).json({ message: "Error fetching announcements" });
+    } finally {
+        if (connection) await connection.close();
+    }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`📊 Database: ${dbConfig.connectString}`);
+/* --- ADMIN: Get all events --- */
+app.get('/api/admin/events', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+
+        const sql = `
+            SELECT e.EVENT_ID, e.EVENT_NAME, e.EVENT_DESC, e.EVENT_TYPE, 
+                   e.EVENT_DATETIME, c.CLUB_NAME
+            FROM EVENTS e
+            JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID
+            ORDER BY e.EVENT_DATETIME DESC
+            FETCH FIRST 50 ROWS ONLY
+        `;
+
+        const result = await connection.execute(sql, [], {
+            outFormat: oracledb.OUT_FORMAT_OBJECT
+        });
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Admin events fetch error:', err);
+        res.status(500).json({ message: "Error fetching events" });
+    } finally {
+        if (connection) await connection.close();
+    }
 });
 
 /* --- SECTION 5: CLUB ADMIN API (Using USERS_CLUB) --- */
@@ -1613,3 +1651,19 @@ app.put('/api/club-admin/applicants/:id/reject', async (req, res) => {
         if (connection) await connection.close();
     }
 });
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        message: "Internal server error",
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`📊 Database: ${dbConfig.connectString}`);
+});
+
