@@ -1,12 +1,14 @@
 <!-- club-admin-dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Club Admin Dashboard - UiTM ClubSphere</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <nav class="sidebar">
         <div class="sidebar-header">
@@ -40,21 +42,21 @@
                     <div class="stat-icon">👥</div>
                     <div class="stat-info">
                         <h3>Total Members</h3>
-                        <p class="stat-number">45</p>
+                        <p class="stat-number">0</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">📋</div>
                     <div class="stat-info">
                         <h3>Pending Applications</h3>
-                        <p class="stat-number">8</p>
+                        <p class="stat-number">0</p>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">📅</div>
                     <div class="stat-info">
                         <h3>Upcoming Events</h3>
-                        <p class="stat-number">3</p>
+                        <p class="stat-number">0</p>
                     </div>
                 </div>
             </div>
@@ -63,16 +65,8 @@
                 <h2>Recent Activity</h2>
                 <div class="activity-list">
                     <div class="activity-item">
-                        <span>✅ New member approved: Ahmad Ali</span>
-                        <span class="date">2 hours ago</span>
-                    </div>
-                    <div class="activity-item">
-                        <span>📢 Announcement posted: Bootcamp Registration</span>
-                        <span class="date">5 hours ago</span>
-                    </div>
-                    <div class="activity-item">
-                        <span>📅 Event created: Web Development Workshop</span>
-                        <span class="date">1 day ago</span>
+                        <span>👋 Welcome to your Club Admin Dashboard!</span>
+                        <span class="date">Today</span>
                     </div>
                 </div>
             </div>
@@ -81,7 +75,7 @@
         <!-- Announcements Section -->
         <div id="clubAdminAnnouncementsSection" class="content-section">
             <button class="btn-primary mb-3" onclick="showAddAnnouncementForm()">+ Add New Announcement</button>
-            
+
             <div id="addAnnouncementForm" class="form-card" style="display: none;">
                 <h3>Create New Announcement</h3>
                 <form onsubmit="addAnnouncement(event)">
@@ -120,11 +114,7 @@
                     </thead>
                     <tbody id="announcementsTableBody">
                         <tr>
-                            <td>Web Development Bootcamp Registration Open</td>
-                            <td><span class="status-badge general">General</span></td>
-                            <td>Dec 20, 2025</td>
-                            <td>
-                                <button class="btn-small btn-danger" onclick="deleteAnnouncement(1)">Delete</button>
+                            <td colspan="4" style="text-align: center; padding: 2rem; color: #999;">No announcements yet
                             </td>
                         </tr>
                     </tbody>
@@ -135,7 +125,7 @@
         <!-- Events Section -->
         <div id="clubAdminEventsSection" class="content-section">
             <button class="btn-primary mb-3" onclick="showAddEventForm()">+ Add New Event</button>
-            
+
             <div id="addEventForm" class="form-card" style="display: none;">
                 <h3>Create New Event</h3>
                 <form onsubmit="addEvent(event)">
@@ -160,10 +150,6 @@
                         <label>Date & Time *</label>
                         <input type="datetime-local" id="eventDateTime" required>
                     </div>
-                    <div class="form-group">
-                        <label>Venue *</label>
-                        <input type="text" id="eventVenue" required>
-                    </div>
                     <div class="form-actions">
                         <button type="submit" class="btn-primary">Create Event</button>
                         <button type="button" class="btn-secondary" onclick="hideAddEventForm()">Cancel</button>
@@ -178,19 +164,12 @@
                             <th>Event Name</th>
                             <th>Type</th>
                             <th>Date & Time</th>
-                            <th>Venue</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="eventsTableBody">
                         <tr>
-                            <td>Web Development Bootcamp</td>
-                            <td><span class="status-badge general">Workshop</span></td>
-                            <td>Jan 15, 2026 - 2:00 PM</td>
-                            <td>Computer Lab A</td>
-                            <td>
-                                <button class="btn-small btn-danger" onclick="deleteEvent(1)">Delete</button>
-                            </td>
+                            <td colspan="4" style="text-align: center; padding: 2rem; color: #999;">No events yet</td>
                         </tr>
                     </tbody>
                 </table>
@@ -206,30 +185,13 @@
                             <th>Name</th>
                             <th>Student ID</th>
                             <th>Faculty</th>
-                            <th>Joined Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Ahmad Ali Bin Abdullah</td>
-                            <td>2024123456</td>
-                            <td>FSKM</td>
-                            <td>Dec 1, 2025</td>
-                            <td>
-                                <button class="btn-small" onclick="viewMemberProfile(1)">View</button>
-                                <button class="btn-small btn-danger" onclick="removeMember(1)">Remove</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Siti Nurhaliza Binti Hassan</td>
-                            <td>2024234567</td>
-                            <td>FSKM</td>
-                            <td>Nov 15, 2025</td>
-                            <td>
-                                <button class="btn-small" onclick="viewMemberProfile(2)">View</button>
-                                <button class="btn-small btn-danger" onclick="removeMember(2)">Remove</button>
-                            </td>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: #999;">No members yet</td>
                         </tr>
                     </tbody>
                 </table>
@@ -245,30 +207,14 @@
                             <th>Name</th>
                             <th>Student ID</th>
                             <th>Faculty</th>
-                            <th>Applied Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Nurul Aina Binti Ibrahim</td>
-                            <td>2024345678</td>
-                            <td>FSKM</td>
-                            <td>Dec 25, 2025</td>
-                            <td>
-                                <button class="btn-small btn-success" onclick="approveApplicant(1)">Approve</button>
-                                <button class="btn-small btn-danger" onclick="rejectApplicant(1)">Reject</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Muhammad Iqbal Bin Zaki</td>
-                            <td>2024456789</td>
-                            <td>FPP</td>
-                            <td>Dec 24, 2025</td>
-                            <td>
-                                <button class="btn-small btn-success" onclick="approveApplicant(2)">Approve</button>
-                                <button class="btn-small btn-danger" onclick="rejectApplicant(2)">Reject</button>
-                            </td>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: #999;">No pending
+                                applications</td>
                         </tr>
                     </tbody>
                 </table>
@@ -312,11 +258,13 @@
                     <form onsubmit="saveClubProfile(event)">
                         <div class="form-group">
                             <label>Mission</label>
-                            <textarea id="editClubMission" rows="2">Empowering students with cutting-edge technology skills and innovation.</textarea>
+                            <textarea id="editClubMission"
+                                rows="2">Empowering students with cutting-edge technology skills and innovation.</textarea>
                         </div>
                         <div class="form-group">
                             <label>Vision</label>
-                            <textarea id="editClubVision" rows="2">To be the leading technology community in UiTM.</textarea>
+                            <textarea id="editClubVision"
+                                rows="2">To be the leading technology community in UiTM.</textarea>
                         </div>
                         <div class="form-group">
                             <label>Email</label>
@@ -328,7 +276,8 @@
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn-primary">Save Changes</button>
-                            <button type="button" class="btn-secondary" onclick="toggleEditClubProfile()">Cancel</button>
+                            <button type="button" class="btn-secondary"
+                                onclick="toggleEditClubProfile()">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -339,4 +288,5 @@
     <script src="auth.js"></script>
     <script src="club-admin.js"></script>
 </body>
+
 </html>

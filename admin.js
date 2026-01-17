@@ -1,3 +1,7 @@
+// ============================================
+// admin.js
+// ============================================
+
 const API_URL = 'http://localhost:3000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,9 +18,9 @@ async function loadCategories() {
     const res = await fetch(`${API_URL}/categories`);
     const cats = await res.json();
     const select = document.getElementById('newClubCategory');
-    if(select) {
-        select.innerHTML = '<option value="">Select category</option>' + 
-        cats.map(c => `<option value="${c.CATEGORY_ID}">${c.CATEGORY_NAME}</option>`).join('');
+    if (select) {
+        select.innerHTML = '<option value="">Select category</option>' +
+            cats.map(c => `<option value="${c.CATEGORY_ID}">${c.CATEGORY_NAME}</option>`).join('');
     }
 }
 
@@ -79,12 +83,12 @@ function viewStudentDetails(name, id, faculty) { alert(`👤 STUDENT INFO\nName:
 function showAdminSection(section) {
     document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-menu a').forEach(link => link.classList.remove('active'));
-    
+
     const targetSection = document.getElementById('admin' + section.charAt(0).toUpperCase() + section.slice(1) + 'Section');
     if (targetSection) targetSection.classList.add('active');
-    
+
     document.getElementById('adminPageTitle').textContent = section.charAt(0).toUpperCase() + section.slice(1);
-    
+
     if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
     if (section === 'clubs') loadClubs();
@@ -97,20 +101,41 @@ function showAddClubForm() {
 
 function hideAddClubForm() {
     document.getElementById('addClubForm').style.display = 'none';
+    // Reset form
+    document.getElementById('addClubFormElement').reset();
 }
 
 async function addNewClub(event) {
     event.preventDefault();
+
+    // Get form values
+    const clubName = document.getElementById('newClubName').value;
+    const categoryId = document.getElementById('newClubCategory').value;
+    const clubMission = document.getElementById('newClubMission').value;
+    const clubVision = document.getElementById('newClubVision').value;
+    const clubEmail = document.getElementById('newClubEmail').value;
+    const clubPhone = document.getElementById('newClubPhone').value;
+    const advisorName = document.getElementById('newClubAdvisor').value;
+    const advisorEmail = document.getElementById('newClubAdvisorEmail').value;
+
+    // Club admin credentials
+    const clubAdminName = document.getElementById('newClubAdminName').value;
+    const clubAdminEmail = document.getElementById('newClubAdminEmail').value;
+    const clubAdminPassword = document.getElementById('newClubAdminPassword').value;
+
     const data = {
-        club_name: document.getElementById('newClubName').value,
-        category_id: document.getElementById('newClubCategory').value,
-        club_mission: document.getElementById('newClubMission').value,
-        club_vision: document.getElementById('newClubVision').value,
-        club_email: document.getElementById('newClubEmail').value,
-        club_phone: document.getElementById('newClubPhone').value,
-        advisor_name: document.getElementById('newClubAdvisor').value,
-        advisor_email: document.getElementById('newClubAdvisorEmail').value,
-        advisor_phone: "" 
+        club_name: clubName,
+        category_id: categoryId,
+        club_mission: clubMission,
+        club_vision: clubVision,
+        club_email: clubEmail,
+        club_phone: clubPhone,
+        advisor_name: advisorName,
+        advisor_email: advisorEmail,
+        // Fixed field names to match server expectations:
+        admin_name: clubAdminName,
+        admin_email: clubAdminEmail,
+        admin_password: clubAdminPassword
     };
 
     const res = await fetch(`${API_URL}/admin/clubs`, {
@@ -119,9 +144,13 @@ async function addNewClub(event) {
         body: JSON.stringify(data)
     });
 
+    const result = await res.json();
+
     if (res.ok) {
-        alert("✅ Club added!");
+        alert(`✅ Club added successfully!\n\nClub Admin Login Details:\nEmail: ${clubAdminEmail}\nPassword: ${clubAdminPassword}\n\nPlease share these credentials with the club admin.`);
         hideAddClubForm();
         loadClubs();
+    } else {
+        alert('❌ ' + result.message);
     }
 }
