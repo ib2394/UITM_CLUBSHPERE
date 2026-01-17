@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - UiTM ClubSphere</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <nav class="sidebar">
         <div class="sidebar-header">
@@ -57,11 +59,29 @@
 
             <div class="dashboard-grid">
                 <div class="dashboard-section">
-                    <h2>📢 Recent Announcements</h2>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin: 0;">📢 Announcements</h2>
+                        <div class="filter-toggle">
+                            <button class="filter-btn active" data-filter="all"
+                                onclick="filterAnnouncements('all')">All</button>
+                            <button class="filter-btn" data-filter="my-clubs"
+                                onclick="filterAnnouncements('my-clubs')">My Clubs</button>
+                        </div>
+                    </div>
                     <div class="announcement-list" id="dynamicAnnouncements"></div>
                 </div>
                 <div class="dashboard-section">
-                    <h2>🎉 Upcoming Events</h2>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin: 0;">🎉 Events</h2>
+                        <div class="filter-toggle">
+                            <button class="filter-btn active" data-filter="all"
+                                onclick="filterEvents('all')">All</button>
+                            <button class="filter-btn" data-filter="my-clubs" onclick="filterEvents('my-clubs')">My
+                                Clubs</button>
+                        </div>
+                    </div>
                     <div class="event-list-simple" id="dynamicEvents"></div>
                 </div>
             </div>
@@ -82,7 +102,12 @@
             <div class="table-container">
                 <table class="data-table">
                     <thead>
-                        <tr><th>Club Name</th><th>Applied Date</th><th>Status</th><th>Actions</th></tr>
+                        <tr>
+                            <th>Club Name</th>
+                            <th>Applied Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
                     </thead>
                     <tbody id="studentApplicationsTableBody"></tbody>
                 </table>
@@ -101,10 +126,88 @@
                     <button class="btn-primary" onclick="toggleEditProfile()">Edit Profile</button>
                 </div>
                 <div class="profile-details">
-                    <div class="detail-group"><label>Faculty</label><p id="profileFaculty"></p></div>
-                    <div class="detail-group"><label>Program</label><p id="profileProgram"></p></div>
-                    <div class="detail-group"><label>Semester</label><p id="profileSemester"></p></div>
+                    <div class="detail-group"><label>Faculty</label>
+                        <p id="profileFaculty"></p>
+                    </div>
+                    <div class="detail-group"><label>Program</label>
+                        <p id="profileProgram"></p>
+                    </div>
+                    <div class="detail-group"><label>Semester</label>
+                        <p id="profileSemester"></p>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Club Details Modal -->
+    <div id="clubDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalClubName">Club Name</h2>
+                <span class="modal-close" onclick="closeClubDetails()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="club-details-grid">
+                    <div class="club-detail-section">
+                        <h3>📋 About</h3>
+                        <div class="detail-item">
+                            <label>Category</label>
+                            <p id="modalClubCategory">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Mission</label>
+                            <p id="modalClubMission">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Vision</label>
+                            <p id="modalClubVision">-</p>
+                        </div>
+                    </div>
+
+                    <div class="club-detail-section">
+                        <h3>👤 Advisor Information</h3>
+                        <div class="detail-item">
+                            <label>Name</label>
+                            <p id="modalAdvisorName">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Email</label>
+                            <p id="modalAdvisorEmail">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Phone</label>
+                            <p id="modalAdvisorPhone">-</p>
+                        </div>
+                    </div>
+
+                    <div class="club-detail-section">
+                        <h3>📞 Contact Information</h3>
+                        <div class="detail-item">
+                            <label>Email</label>
+                            <p id="modalClubEmail">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Phone</label>
+                            <p id="modalClubPhone">-</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>Total Members</label>
+                            <p id="modalMemberCount">-</p>
+                        </div>
+                    </div>
+
+                    <div class="club-detail-section full-width">
+                        <h3>📅 Upcoming Events</h3>
+                        <div id="modalClubEvents" class="event-list-modal">
+                            <p style="color: #999;">No upcoming events</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeClubDetails()">Close</button>
+                <button class="btn-primary" id="modalApplyBtn" onclick="applyFromModal()">Apply to Join</button>
             </div>
         </div>
     </div>
@@ -112,4 +215,5 @@
     <script src="auth.js"></script>
     <script src="student.js"></script>
 </body>
+
 </html>
