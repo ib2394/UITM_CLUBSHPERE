@@ -233,5 +233,76 @@ function checkAuth() {
         window.location.href = 'login.html';
         return false;
     }
-    return { isLoggedIn: true, userType: userType };
+
+    return {
+        isLoggedIn: true,
+        userType: userType,
+        userEmail: getUserData('userEmail'),
+        userName: getUserData('userName'),
+        userId: getUserData('userId')
+    };
+}
+
+// Helper function to get user data from storage
+function getUserData(key) {
+    try {
+        return sessionStorage.getItem(key);
+    } catch (e) {
+        return window._authData?.[key];
+    }
+}
+
+// Helper function to set user data
+function setUserData(key, value) {
+    try {
+        sessionStorage.setItem(key, value);
+    } catch (e) {
+        window._authData = window._authData || {};
+        window._authData[key] = value;
+    }
+}
+
+// Auto-logout on session expiry (optional)
+function setupSessionTimeout(minutes = 30) {
+    const timeout = minutes * 60 * 1000;
+    let timeoutId;
+
+    function resetTimeout() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            alert('Session expired. Please login again.');
+            handleLogout();
+        }, timeout);
+    }
+
+    // Reset timeout on user activity
+    ['click', 'keypress', 'scroll', 'mousemove'].forEach(event => {
+        document.addEventListener(event, resetTimeout, { passive: true });
+    });
+
+    resetTimeout();
+}
+
+// Don't run checkAuth or setup timeout on login/register pages
+const currentPage = window.location.pathname;
+const isAuthPage = currentPage.includes('login.html') ||
+    currentPage.includes('register.html') ||
+    currentPage === '/' ||
+    currentPage === '';
+
+if (!isAuthPage) {
+    // Only initialize on protected pages after DOM loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            const authStatus = checkAuth();
+            if (authStatus && authStatus.isLoggedIn) {
+                setupSessionTimeout(30);
+            }
+        });
+    } else {
+        const authStatus = checkAuth();
+        if (authStatus && authStatus.isLoggedIn) {
+            setupSessionTimeout(30);
+        }
+    }
 }
