@@ -1,5 +1,8 @@
 // student.js - Student Dashboard Functionality
 
+// Global variable to store current profile data
+let currentUserProfile = {};
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function () {
     const auth = checkAuth();
@@ -14,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadEvents('all'); // Default: show all events
     loadClubs();
     loadApplications();
+    loadProfile(); // Loads profile data
 });
 
 // Store current filters
@@ -203,7 +207,7 @@ function displayAnnouncements(announcements) {
 
         // Source badge (if showing all announcements)
         let sourceBadge = '';
-        if (currentAnnouncementFilter === 'all' && annc.SOURCE) {
+        if (currentAnnouncementFilter === 'all' && annc.SOURCE === 'My Club') {
             if (annc.SOURCE === 'My Club') {
                 sourceBadge = '<span class="status-badge" style="background: #e0e7ff; color: #667eea; font-size: 0.75rem;">📌 My Club</span>';
             }
@@ -469,24 +473,23 @@ function displayClubDetailsModal(club) {
 
     // Display events
     const eventsContainer = document.getElementById('modalClubEvents');
-    if (!eventsContainer) return;
+    if (eventsContainer) {
+        if (!club.EVENTS || club.EVENTS.length === 0) {
+            eventsContainer.innerHTML = '<p style="color: #999;">No upcoming events</p>';
+        } else {
+            eventsContainer.innerHTML = club.EVENTS.map(event => {
+                const eventDate = new Date(event.EVENT_DATETIME);
+                const formattedDate = eventDate.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                const formattedTime = eventDate.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
 
-    if (!club.EVENTS || club.EVENTS.length === 0) {
-        eventsContainer.innerHTML = '<p style="color: #999;">No upcoming events</p>';
-    } else {
-        eventsContainer.innerHTML = club.EVENTS.map(event => {
-            const eventDate = new Date(event.EVENT_DATETIME);
-            const formattedDate = eventDate.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-            });
-            const formattedTime = eventDate.toLocaleTimeString('en-GB', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            return `
+                return `
                 <div class="event-item-modal">
                     <strong>${event.EVENT_NAME}</strong>
                     <p>${event.EVENT_DESC || 'No description'}</p>
@@ -494,7 +497,8 @@ function displayClubDetailsModal(club) {
                     <p><strong>Date & Time:</strong> ${formattedDate} at ${formattedTime}</p>
                 </div>
             `;
-        }).join('');
+            }).join('');
+        }
     }
 
     // Store club name for apply button
@@ -608,7 +612,7 @@ async function cancelApplication(appId) {
     }
 }
 
-// Load and display profile
+// Load and display profile (UPDATED to save to global variable)
 async function loadProfile() {
     const auth = checkAuth();
     if (!auth) return;
@@ -617,6 +621,7 @@ async function loadProfile() {
         const response = await fetch(`http://localhost:3000/api/profile/${auth.userEmail}`);
         if (response.ok) {
             const profile = await response.json();
+            currentUserProfile = profile; // Save to global state
             displayProfile(profile);
         }
     } catch (error) {
@@ -633,6 +638,102 @@ function displayProfile(profile) {
     document.getElementById('profileSemester').textContent = `Semester ${profile.STUDENT_SEMESTER || 'N/A'}`;
 }
 
+// --- NEW EDIT PROFILE FUNCTIONS START HERE ---
+
+let isEditMode = false;
+
 function toggleEditProfile() {
-    alert('Edit profile functionality can be implemented here!\n\nThis would show a form to update:\n- Name\n- Faculty\n- Program\n- Semester');
+    const btn = document.querySelector('#profileActions button') || document.querySelector('.profile-header .btn-primary');
+    
+    if (!isEditMode) {
+        // --- SWITCH TO EDIT MODE ---
+        // Ensure we have data loaded
+        if (!currentUserProfile.USER_NAME) return;
+
+        const nameEl = document.getElementById('profileName');
+        const idEl = document.getElementById('profileStudentId');
+        const facEl = document.getElementById('profileFaculty');
+        const progEl = document.getElementById('profileProgram');
+        const semEl = document.getElementById('profileSemester');
+
+        // Get current values from the global object to avoid parsing HTML text
+        const currentName = currentUserProfile.USER_NAME || '';
+        const currentId = currentUserProfile.STUDENT_NUMBER || '';
+        const currentFac = currentUserProfile.STUDENT_FACULTY || '';
+        const currentProg = currentUserProfile.STUDENT_PROGRAM || '';
+        const currentSem = currentUserProfile.STUDENT_SEMESTER || '';
+
+        // Replace text with inputs
+        nameEl.innerHTML = `<input type="text" id="editName" value="${currentName}" class="edit-input" style="font-size: 1.5rem; font-weight: bold;">`;
+        idEl.innerHTML = `Student ID: <input type="text" id="editStudentId" value="${currentId}" class="edit-input" style="width: 150px;">`;
+        facEl.innerHTML = `<input type="text" id="editFaculty" value="${currentFac}" class="edit-input">`;
+        progEl.innerHTML = `<input type="text" id="editProgram" value="${currentProg}" class="edit-input">`;
+        semEl.innerHTML = `Semester <input type="number" id="editSemester" value="${currentSem}" class="edit-input" style="width: 80px;" min="1" max="10">`;
+
+        // Update button
+        btn.textContent = "Save Changes";
+        btn.onclick = saveProfile;
+        
+        // Add cancel button
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-secondary';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.marginLeft = '10px';
+        cancelBtn.onclick = cancelEditProfile;
+        btn.parentNode.appendChild(cancelBtn);
+
+        isEditMode = true;
+    }
+}
+
+async function saveProfile() {
+    const auth = checkAuth();
+    if (!auth) return;
+
+    // Collect data from inputs
+    const updatedData = {
+        email: auth.userEmail,
+        name: document.getElementById('editName').value,
+        student_number: document.getElementById('editStudentId').value,
+        faculty: document.getElementById('editFaculty').value,
+        program: document.getElementById('editProgram').value,
+        semester: document.getElementById('editSemester').value
+    };
+
+    try {
+        const response = await fetch('http://localhost:3000/api/profile/update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        });
+
+        if (response.ok) {
+            alert('✅ Profile updated successfully!');
+            // Reload profile data to refresh global state and UI
+            await loadProfile();
+            await loadStudentData(); // Refresh top bar name
+            
+            // Reset UI state
+            resetEditModeUI();
+        } else {
+            const res = await response.json();
+            alert('❌ ' + (res.message || 'Update failed'));
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('🚨 Error saving profile');
+    }
+}
+
+function cancelEditProfile() {
+    // Simply reload data to discard changes
+    loadProfile();
+    resetEditModeUI();
+}
+
+function resetEditModeUI() {
+    isEditMode = false;
+    const actionDiv = document.getElementById('profileActions');
+    // Clear and restore original button
+    actionDiv.innerHTML = '<button class="btn-primary" onclick="toggleEditProfile()">Edit Profile</button>';
 }

@@ -100,7 +100,7 @@ function showClubAdminSection(section) {
     };
     document.getElementById('clubAdminPageTitle').textContent = titles[section] || 'Dashboard';
 
-    event.target.classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
 
     // Load data for the section
     switch (section) {
@@ -126,6 +126,9 @@ async function loadAnnouncements() {
 
     try {
         const response = await fetch(`${API_URL}/club-admin/announcements/${userEmail}`);
+        
+        if(!response.ok) return; // Silent fail
+
         const announcements = await response.json();
 
         const tbody = document.getElementById('announcementsTableBody');
@@ -155,7 +158,6 @@ async function loadAnnouncements() {
         });
     } catch (error) {
         console.error('Error loading announcements:', error);
-        alert('Error loading announcements. Please try again.');
     }
 }
 
@@ -349,7 +351,7 @@ async function deleteEvent(eventId) {
     }
 }
 
-/* ===== MEMBERS ===== */
+/* ===== MEMBERS (Fixed View Button) ===== */
 
 async function loadMembers() {
     const userEmail = getUserData('userEmail');
@@ -368,13 +370,14 @@ async function loadMembers() {
 
         members.forEach(member => {
             const row = tbody.insertRow();
+            // FIXED: Passing full student info
             row.innerHTML = `
                 <td>${member.USER_NAME}</td>
                 <td>${member.STUDENT_NUMBER}</td>
                 <td>${member.STUDENT_FACULTY}</td>
                 <td>Member</td>
                 <td>
-                    <button class="btn-small" onclick="viewMemberProfile(${member.USER_ID})">View</button>
+                    <button class="btn-small" onclick="viewMemberProfile('${member.USER_NAME}', '${member.STUDENT_NUMBER}', '${member.STUDENT_FACULTY}', '${member.STUDENT_PROGRAM}', '${member.STUDENT_SEMESTER}')">View</button>
                     <button class="btn-small btn-danger" onclick="removeMember(${member.USER_ID})">Remove</button>
                 </td>
             `;
@@ -385,8 +388,9 @@ async function loadMembers() {
     }
 }
 
-function viewMemberProfile(memberId) {
-    alert('Member profile view will be implemented. Member ID: ' + memberId);
+// FIXED: Display credentials
+function viewMemberProfile(name, id, faculty, program, semester) {
+    alert(`👤 STUDENT DETAILS\n\nName: ${name}\nStudent ID: ${id}\nFaculty: ${faculty}\nProgram: ${program}\nSemester: ${semester}`);
 }
 
 async function removeMember(memberId) {
