@@ -34,7 +34,7 @@ app.post('/api/login', async (req, res) => {
 
         connection = await oracledb.getConnection(dbConfig);
         const sql = `SELECT USER_ID, USER_NAME, USER_TYPE, USER_EMAIL, USER_PASSWORD FROM USERS 
-                     WHERE LOWER(USER_EMAIL) = LOWER(:email) AND USER_TYPE = :type AND IS_ACTIVE = 1`;
+                      WHERE LOWER(USER_EMAIL) = LOWER(:email) AND USER_TYPE = :type AND IS_ACTIVE = 1`;
         
         const result = await connection.execute(sql, { email: user_email.trim(), type: user_type }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
 
@@ -54,14 +54,14 @@ app.post('/api/register', async (req, res) => {
         connection = await oracledb.getConnection(dbConfig);
         
         const userSql = `INSERT INTO USERS (USER_ID, USER_NAME, USER_PASSWORD, USER_EMAIL, IS_ACTIVE, USER_TYPE) 
-                         VALUES (user_seq.NEXTVAL, :name, :pass, :email, 1, :type) RETURNING USER_ID INTO :id`;
+                          VALUES (user_seq.NEXTVAL, :name, :pass, :email, 1, :type) RETURNING USER_ID INTO :id`;
         const userResult = await connection.execute(userSql, { 
             name: user_name.trim(), pass: user_password, email: user_email.trim().toLowerCase(), type: user_type || 'student', id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } 
         });
         
         const newUserId = userResult.outBinds.id[0];
         await connection.execute(`INSERT INTO STUDENT_INFO (USER_ID, STUDENT_NUMBER, STUDENT_PROGRAM, STUDENT_FACULTY, STUDENT_SEMESTER) 
-                                  VALUES (:id, :sNum, :prog, :fac, :sem)`, 
+                                   VALUES (:id, :sNum, :prog, :fac, :sem)`, 
             { id: newUserId, sNum: student_number, prog: student_program, fac: student_faculty, sem: student_semester });
         
         await connection.commit();
@@ -78,7 +78,7 @@ app.get('/api/profile/:email', async (req, res) => {
     try {
         connection = await oracledb.getConnection(dbConfig);
         const sql = `SELECT u.USER_NAME, u.USER_EMAIL, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, si.STUDENT_SEMESTER 
-                     FROM USERS u JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE LOWER(u.USER_EMAIL) = LOWER(:email)`;
+                      FROM USERS u JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE LOWER(u.USER_EMAIL) = LOWER(:email)`;
         const result = await connection.execute(sql, { email: req.params.email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         
         if (result.rows.length === 0) return res.status(404).json({ message: "Not found" });
@@ -94,8 +94,8 @@ app.put('/api/profile/update', async (req, res) => {
         connection = await oracledb.getConnection(dbConfig);
         await connection.execute(`UPDATE USERS SET USER_NAME = :name WHERE LOWER(USER_EMAIL) = LOWER(:email)`, { name, email });
         await connection.execute(`UPDATE STUDENT_INFO si SET si.STUDENT_NUMBER = :sNum, si.STUDENT_FACULTY = :fac, si.STUDENT_PROGRAM = :prog, si.STUDENT_SEMESTER = :sem 
-                                  WHERE si.USER_ID = (SELECT USER_ID FROM USERS WHERE LOWER(USER_EMAIL) = LOWER(:email))`, 
-                                  { sNum: student_number, fac: faculty, prog: program, sem: semester, email });
+                                   WHERE si.USER_ID = (SELECT USER_ID FROM USERS WHERE LOWER(USER_EMAIL) = LOWER(:email))`, 
+                                   { sNum: student_number, fac: faculty, prog: program, sem: semester, email });
         await connection.commit();
         res.json({ message: "Updated" });
     } catch (err) { if (connection) await connection.rollback(); res.status(500).json({ message: "Error" }); }
@@ -168,7 +168,7 @@ app.get('/api/student/announcements/:email', async (req, res) => {
     try {
         connection = await oracledb.getConnection(dbConfig);
         const sql = `SELECT DISTINCT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, a.ANNC_DATE_TIME as ANNC_DATE, c.CLUB_NAME 
-                     FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID ORDER BY a.ANNC_DATE_TIME DESC`;
+                      FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID ORDER BY a.ANNC_DATE_TIME DESC`;
         const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
     } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
@@ -180,7 +180,7 @@ app.get('/api/student/events/:email', async (req, res) => {
     try {
         connection = await oracledb.getConnection(dbConfig);
         const sql = `SELECT DISTINCT e.EVENT_ID, e.EVENT_NAME, e.EVENT_DESC, e.EVENT_TYPE, e.EVENT_DATETIME, c.CLUB_NAME 
-                     FROM EVENTS e JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID WHERE e.EVENT_DATETIME > SYSDATE ORDER BY e.EVENT_DATETIME ASC`;
+                      FROM EVENTS e JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID WHERE e.EVENT_DATETIME > SYSDATE ORDER BY e.EVENT_DATETIME ASC`;
         const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
     } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
@@ -217,8 +217,8 @@ app.get('/api/clubs/:id', async (req, res) => {
     try {
         connection = await oracledb.getConnection(dbConfig);
         const clubSql = `SELECT c.CLUB_ID, c.CLUB_NAME, c.CLUB_MISSION, c.CLUB_VISION, c.CLUB_EMAIL, c.CLUB_PHONE, c.ADVISOR_NAME, c.ADVISOR_EMAIL, c.ADVISOR_PHONE, cat.CATEGORY_NAME, 
-                        (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.CLUB_ID = c.CLUB_ID) as MEMBER_COUNT 
-                        FROM CLUBS c LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID LEFT JOIN CATEGORY cat ON cc.CATEGORY_ID = cat.CATEGORY_ID WHERE c.CLUB_ID = :id`;
+                         (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.CLUB_ID = c.CLUB_ID) as MEMBER_COUNT 
+                         FROM CLUBS c LEFT JOIN CLUB_CATEGORY cc ON c.CLUB_ID = cc.CLUB_ID LEFT JOIN CATEGORY cat ON cc.CATEGORY_ID = cat.CATEGORY_ID WHERE c.CLUB_ID = :id`;
         const clubResult = await connection.execute(clubSql, { id: req.params.id }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         
         if (clubResult.rows.length === 0) return res.status(404).json({ message: "Not found" });
@@ -435,6 +435,7 @@ app.get('/api/club-admin/events/:email', async (req, res) => {
 });
 
 // FIXED: Date format to handle missing seconds from HTML input
+// FIXED: Renamed :desc to :eventDesc to avoid ORA-01745
 app.post('/api/club-admin/events', async (req, res) => {
     let connection;
     try {
@@ -442,8 +443,9 @@ app.post('/api/club-admin/events', async (req, res) => {
         connection = await oracledb.getConnection(dbConfig);
         const clubRes = await connection.execute(`SELECT uc.CLUB_ID FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE LOWER(u.USER_EMAIL) = LOWER(:email)`, { email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         const clubId = clubRes.rows[0].CLUB_ID;
-        // Fix: Removed seconds (:SS) from mask
-        await connection.execute(`INSERT INTO EVENTS (EVENT_ID, EVENT_NAME, EVENT_DESC, EVENT_TYPE, EVENT_DATETIME, CLUB_ID) VALUES (event_seq.NEXTVAL, :name, :desc, :type, TO_DATE(:dt, 'YYYY-MM-DD"T"HH24:MI'), :clubId)`, { name, desc: description, type, dt: datetime, clubId });
+        
+        // FIX: Changed :desc to :eventDesc
+        await connection.execute(`INSERT INTO EVENTS (EVENT_ID, EVENT_NAME, EVENT_DESC, EVENT_TYPE, EVENT_DATETIME, CLUB_ID) VALUES (event_seq.NEXTVAL, :name, :eventDesc, :type, TO_DATE(:dt, 'YYYY-MM-DD"T"HH24:MI'), :clubId)`, { name, eventDesc: description, type, dt: datetime, clubId });
         await connection.commit();
         res.status(201).json({ message: "Created" });
     } catch (err) { if (connection) await connection.rollback(); res.status(500).json({ message: err.message }); } finally { if (connection) await connection.close(); }
@@ -459,12 +461,21 @@ app.delete('/api/club-admin/events/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); } finally { if (connection) await connection.close(); }
 });
 
-// FIXED: Added STUDENT_SEMESTER
+// FIXED: Added STUDENT_SEMESTER and fixed Join alias
 app.get('/api/club-admin/members/:email', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT u.USER_ID, u.USER_NAME, u.USER_EMAIL, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, si.STUDENT_SEMESTER FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE uc.CLUB_ID = (SELECT uc2.CLUB_ID FROM USERS_CLUB uc2 JOIN USERS u2 ON uc.USER_ID = u2.USER_ID WHERE LOWER(u2.USER_EMAIL) = LOWER(:email) AND u2.USER_TYPE = 'club_admin') AND u.USER_TYPE = 'student' ORDER BY u.USER_NAME`;
+        
+        // FIX: Changed uc.USER_ID to uc2.USER_ID in the subquery join
+        const sql = `SELECT u.USER_ID, u.USER_NAME, u.USER_EMAIL, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, si.STUDENT_SEMESTER 
+                     FROM USERS_CLUB uc 
+                     JOIN USERS u ON uc.USER_ID = u.USER_ID 
+                     JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID 
+                     WHERE uc.CLUB_ID = (SELECT uc2.CLUB_ID FROM USERS_CLUB uc2 JOIN USERS u2 ON uc2.USER_ID = u2.USER_ID WHERE LOWER(u2.USER_EMAIL) = LOWER(:email) AND u2.USER_TYPE = 'club_admin') 
+                     AND u.USER_TYPE = 'student' 
+                     ORDER BY u.USER_NAME`;
+        
         const result = await connection.execute(sql, { email: req.params.email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
     } catch (err) { res.status(500).json({ message: "Error fetching members" }); }
