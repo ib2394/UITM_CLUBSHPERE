@@ -162,28 +162,86 @@ app.get('/api/student/applications/:email', async (req, res) => {
     } finally { if (connection) await connection.close(); }
 });
 
-// 3. ANNOUNCEMENTS (Fixed ANNC_DATE_TIME)
+// 3. ANNOUNCEMENTS (Fixed: Supports filtering by 'My Clubs' vs 'All')
 app.get('/api/student/announcements/:email', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT DISTINCT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, a.ANNC_DATE_TIME as ANNC_DATE, c.CLUB_NAME 
-                      FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID ORDER BY a.ANNC_DATE_TIME DESC`;
-        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        const email = req.params.email;
+        const filter = req.query.filter; // Get filter from frontend
+        
+        let sql;
+        
+        if (filter === 'my-clubs') {
+            // Case 1: Show ONLY announcements from clubs the student has joined
+            sql = `SELECT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, a.ANNC_DATE_TIME as ANNC_DATE, c.CLUB_NAME, 'My Club' as SOURCE
+                   FROM ANNOUNCEMENT a 
+                   JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID 
+                   JOIN USERS_CLUB uc ON c.CLUB_ID = uc.CLUB_ID 
+                   JOIN USERS u ON uc.USER_ID = u.USER_ID 
+                   WHERE LOWER(u.USER_EMAIL) = LOWER(:email)
+                   ORDER BY a.ANNC_DATE_TIME DESC`;
+        } else {
+            // Case 2: Show ALL announcements, but calculate 'SOURCE' so the frontend can badge 'My Club'
+            sql = `SELECT DISTINCT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, a.ANNC_DATE_TIME as ANNC_DATE, c.CLUB_NAME,
+                   CASE WHEN EXISTS (
+                       SELECT 1 FROM USERS_CLUB uc 
+                       JOIN USERS u ON uc.USER_ID = u.USER_ID 
+                       WHERE uc.CLUB_ID = c.CLUB_ID AND LOWER(u.USER_EMAIL) = LOWER(:email)
+                   ) THEN 'My Club' ELSE 'Other' END as SOURCE
+                   FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID ORDER BY a.ANNC_DATE_TIME DESC`;
+        }
+
+        const result = await connection.execute(sql, { email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
+    } catch (err) { 
+        console.error('Announcements Error:', err);
+        res.status(500).json({ message: "Error" }); 
+    } finally { 
+        if (connection) await connection.close(); 
+    }
 });
 
-// 4. EVENTS
+// 4. EVENTS (Fixed: Supports filtering by 'My Clubs' vs 'All')
 app.get('/api/student/events/:email', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT DISTINCT e.EVENT_ID, e.EVENT_NAME, e.EVENT_DESC, e.EVENT_TYPE, e.EVENT_DATETIME, c.CLUB_NAME 
-                      FROM EVENTS e JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID WHERE e.EVENT_DATETIME > SYSDATE ORDER BY e.EVENT_DATETIME ASC`;
-        const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        const email = req.params.email;
+        const filter = req.query.filter; // Get filter from frontend
+        
+        let sql;
+
+        if (filter === 'my-clubs') {
+             // Case 1: Show ONLY events from clubs the student has joined
+             sql = `SELECT e.EVENT_ID, e.EVENT_NAME, e.EVENT_DESC, e.EVENT_TYPE, e.EVENT_DATETIME, c.CLUB_NAME, 'My Club' as SOURCE
+                    FROM EVENTS e 
+                    JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID 
+                    JOIN USERS_CLUB uc ON c.CLUB_ID = uc.CLUB_ID 
+                    JOIN USERS u ON uc.USER_ID = u.USER_ID 
+                    WHERE LOWER(u.USER_EMAIL) = LOWER(:email) AND e.EVENT_DATETIME > SYSDATE
+                    ORDER BY e.EVENT_DATETIME ASC`;
+        } else {
+             // Case 2: Show ALL events, marking 'My Club' for badges
+             sql = `SELECT DISTINCT e.EVENT_ID, e.EVENT_NAME, e.EVENT_DESC, e.EVENT_TYPE, e.EVENT_DATETIME, c.CLUB_NAME,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM USERS_CLUB uc 
+                        JOIN USERS u ON uc.USER_ID = u.USER_ID 
+                        WHERE uc.CLUB_ID = c.CLUB_ID AND LOWER(u.USER_EMAIL) = LOWER(:email)
+                    ) THEN 'My Club' ELSE 'Other' END as SOURCE 
+                    FROM EVENTS e JOIN CLUBS c ON e.CLUB_ID = c.CLUB_ID 
+                    WHERE e.EVENT_DATETIME > SYSDATE 
+                    ORDER BY e.EVENT_DATETIME ASC`;
+        }
+
+        const result = await connection.execute(sql, { email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
+    } catch (err) { 
+        console.error('Events Error:', err);
+        res.status(500).json({ message: "Error" }); 
+    } finally { 
+        if (connection) await connection.close(); 
+    }
 });
 
 // 5. APPLY TO CLUB
