@@ -127,10 +127,10 @@ async function loadAnnouncements() {
     try {
         const response = await fetch(`${API_URL}/club-admin/announcements/${userEmail}`);
         
-        if(!response.ok) return; // Silent fail
+        // Safety check to handle potential server errors
+        if (!response.ok) return;
 
         const announcements = await response.json();
-
         const tbody = document.getElementById('announcementsTableBody');
         tbody.innerHTML = '';
 
@@ -140,12 +140,7 @@ async function loadAnnouncements() {
         }
 
         announcements.forEach(ann => {
-            const date = new Date(ann.ANNC_DATE).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-
+            const date = new Date(ann.ANNC_DATE).toLocaleDateString('en-GB');
             const row = tbody.insertRow();
             row.innerHTML = `
                 <td>${ann.ANNC_TITLE}</td>
@@ -370,7 +365,7 @@ async function loadMembers() {
 
         members.forEach(member => {
             const row = tbody.insertRow();
-            // FIXED: Passing full student info
+            // FIXED: Passing full student info (added program and semester)
             row.innerHTML = `
                 <td>${member.USER_NAME}</td>
                 <td>${member.STUDENT_NUMBER}</td>
@@ -388,7 +383,7 @@ async function loadMembers() {
     }
 }
 
-// FIXED: Display credentials
+// FIXED: Updated view function to show full credentials
 function viewMemberProfile(name, id, faculty, program, semester) {
     alert(`👤 STUDENT DETAILS\n\nName: ${name}\nStudent ID: ${id}\nFaculty: ${faculty}\nProgram: ${program}\nSemester: ${semester}`);
 }

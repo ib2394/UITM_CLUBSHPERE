@@ -15,7 +15,7 @@ const dbConfig = {
     connectString: "localhost:1521/FREEPDB1"
 };
 
-// Logging
+// Logging middleware
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
     next();
@@ -121,7 +121,7 @@ app.get('/api/student/stats/:email', async (req, res) => {
    SECTION 3: STUDENT FEATURES (CLUBS, APPS, EVENTS)
    ========================================= */
 
-// 1. GET CLUBS LIST (RESTORED)
+// 1. GET CLUBS LIST
 app.get('/api/student/clubs', async (req, res) => {
     let connection;
     try {
@@ -141,7 +141,7 @@ app.get('/api/student/clubs', async (req, res) => {
     } finally { if (connection) await connection.close(); }
 });
 
-// 2. GET APPLICATIONS LIST (FIXED: Uses Named Binds)
+// 2. GET APPLICATIONS LIST
 app.get('/api/student/applications/:email', async (req, res) => {
     let connection;
     try {
@@ -152,7 +152,7 @@ app.get('/api/student/applications/:email', async (req, res) => {
              JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID 
              JOIN USERS u ON a.USER_ID = u.USER_ID 
              WHERE LOWER(u.USER_EMAIL) = LOWER(:email)`,
-            { email: req.params.email }, // Fixed: Named bind
+            { email: req.params.email }, 
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
         res.json(result.rows);
@@ -205,7 +205,7 @@ app.delete('/api/student/application/:id', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        await connection.execute(`DELETE FROM APPLICATION WHERE APPLICATION_ID = :id`, { id: req.params.id }); // Fixed bind
+        await connection.execute(`DELETE FROM APPLICATION WHERE APPLICATION_ID = :id`, { id: req.params.id }); 
         await connection.commit();
         res.json({ message: "Cancelled" });
     } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
@@ -239,7 +239,7 @@ app.get('/api/categories', async (req, res) => {
         connection = await oracledb.getConnection(dbConfig);
         const result = await connection.execute(`SELECT CATEGORY_ID, CATEGORY_NAME FROM CATEGORY`, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
+    } catch (err) { res.status(500).json({ message: "Error fetching categories" }); } finally { if (connection) await connection.close(); }
 });
 
 app.get('/api/admin/clubs', async (req, res) => {
@@ -309,7 +309,7 @@ app.get('/api/admin/students', async (req, res) => {
         const sql = `SELECT u.USER_ID, u.USER_NAME, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, (SELECT COUNT(*) FROM USERS_CLUB uc WHERE uc.USER_ID = u.USER_ID) as CLUBS_JOINED FROM USERS u JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE u.USER_TYPE = 'student'`;
         const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
+    } catch (err) { res.status(500).json({ message: "Error fetching students" }); } finally { if (connection) await connection.close(); }
 });
 
 app.delete('/api/admin/students/:id', async (req, res) => {
@@ -331,6 +331,7 @@ app.get('/api/admin/announcements', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
+        // Using ANNC_DATE_TIME and aliasing as ANNC_DATE
         const sql = `SELECT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, a.ANNC_DATE_TIME as ANNC_DATE, c.CLUB_NAME FROM ANNOUNCEMENT a JOIN CLUBS c ON a.CLUB_ID = c.CLUB_ID ORDER BY a.ANNC_DATE_TIME DESC FETCH FIRST 50 ROWS ONLY`;
         const result = await connection.execute(sql, [], { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
@@ -348,7 +349,7 @@ app.get('/api/admin/events', async (req, res) => {
 });
 
 /* =========================================
-   SECTION 5: CLUB ADMIN API
+   SECTION 5: CLUB ADMIN API (FIXED)
    ========================================= */
 app.get('/api/club-admin/stats/:email', async (req, res) => {
     let connection;
@@ -393,7 +394,7 @@ app.get('/api/club-admin/announcements/:email', async (req, res) => {
         const sql = `SELECT a.ANNC_ID, a.ANNC_TITLE, a.ANNC_CONTENT, a.ANNC_TYPE, a.ANNC_DATE_TIME as ANNC_DATE FROM ANNOUNCEMENT a WHERE a.CLUB_ID = (SELECT uc.CLUB_ID FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE LOWER(u.USER_EMAIL) = LOWER(:email) AND u.USER_TYPE = 'club_admin') ORDER BY a.ANNC_DATE_TIME DESC`;
         const result = await connection.execute(sql, { email: req.params.email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
+    } catch (err) { res.status(500).json({ message: "Error loading announcements" }); } finally { if (connection) await connection.close(); }
 });
 
 // FIXED: ANNC_DATE_TIME
@@ -405,7 +406,9 @@ app.post('/api/club-admin/announcements', async (req, res) => {
         const clubRes = await connection.execute(`SELECT uc.CLUB_ID FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE LOWER(u.USER_EMAIL) = LOWER(:email)`, { email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         if (clubRes.rows.length === 0) return res.status(404).json({ message: "Club not found" });
         const clubId = clubRes.rows[0].CLUB_ID;
-        await connection.execute(`INSERT INTO ANNOUNCEMENT (ANNC_ID, ANNC_TITLE, ANNC_CONTENT, ANNC_TYPE, ANNC_DATE_TIME, CLUB_ID) VALUES (announcement_seq.NEXTVAL, :title, :content, :type, SYSDATE, :clubId)`, { title, content, type, clubId });
+        // Using ANNC_DATE_TIME
+        await connection.execute(`INSERT INTO ANNOUNCEMENT (ANNC_ID, ANNC_TITLE, ANNC_CONTENT, ANNC_TYPE, ANNC_DATE_TIME, CLUB_ID) VALUES (announcement_seq.NEXTVAL, :title, :content, :type, SYSDATE, :clubId)`,
+            { title, content, type, clubId });
         await connection.commit();
         res.status(201).json({ message: "Posted" });
     } catch (err) { if (connection) await connection.rollback(); res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
@@ -415,7 +418,7 @@ app.delete('/api/club-admin/announcements/:id', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        await connection.execute(`DELETE FROM ANNOUNCEMENT WHERE ANNC_ID = :id`, [req.params.id]);
+        await connection.execute(`DELETE FROM ANNOUNCEMENT WHERE ANNC_ID = :id`, { id: req.params.id }); 
         await connection.commit();
         res.json({ message: "Deleted" });
     } catch (e) { res.status(500).json({ message: e.message }); } finally { if (connection) await connection.close(); }
@@ -431,6 +434,7 @@ app.get('/api/club-admin/events/:email', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
 });
 
+// FIXED: Date format to handle missing seconds from HTML input
 app.post('/api/club-admin/events', async (req, res) => {
     let connection;
     try {
@@ -438,7 +442,8 @@ app.post('/api/club-admin/events', async (req, res) => {
         connection = await oracledb.getConnection(dbConfig);
         const clubRes = await connection.execute(`SELECT uc.CLUB_ID FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID WHERE LOWER(u.USER_EMAIL) = LOWER(:email)`, { email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         const clubId = clubRes.rows[0].CLUB_ID;
-        await connection.execute(`INSERT INTO EVENTS (EVENT_ID, EVENT_NAME, EVENT_DESC, EVENT_TYPE, EVENT_DATETIME, CLUB_ID) VALUES (event_seq.NEXTVAL, :name, :desc, :type, TO_DATE(:dt, 'YYYY-MM-DD"T"HH24:MI:SS'), :clubId)`, { name, desc: description, type, dt: datetime, clubId });
+        // Fix: Removed seconds (:SS) from mask
+        await connection.execute(`INSERT INTO EVENTS (EVENT_ID, EVENT_NAME, EVENT_DESC, EVENT_TYPE, EVENT_DATETIME, CLUB_ID) VALUES (event_seq.NEXTVAL, :name, :desc, :type, TO_DATE(:dt, 'YYYY-MM-DD"T"HH24:MI'), :clubId)`, { name, desc: description, type, dt: datetime, clubId });
         await connection.commit();
         res.status(201).json({ message: "Created" });
     } catch (err) { if (connection) await connection.rollback(); res.status(500).json({ message: err.message }); } finally { if (connection) await connection.close(); }
@@ -448,21 +453,22 @@ app.delete('/api/club-admin/events/:id', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        await connection.execute(`DELETE FROM EVENTS WHERE EVENT_ID = :id`, [req.params.id]);
+        await connection.execute(`DELETE FROM EVENTS WHERE EVENT_ID = :id`, { id: req.params.id }); 
         await connection.commit();
         res.json({ message: "Deleted" });
     } catch (err) { res.status(500).json({ message: err.message }); } finally { if (connection) await connection.close(); }
 });
 
-// FIXED: Added STUDENT_SEMESTER to query for "View" details
+// FIXED: Added STUDENT_SEMESTER
 app.get('/api/club-admin/members/:email', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const sql = `SELECT u.USER_ID, u.USER_NAME, u.USER_EMAIL, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, si.STUDENT_SEMESTER FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE uc.CLUB_ID = (SELECT uc2.CLUB_ID FROM USERS_CLUB uc2 JOIN USERS u2 ON uc2.USER_ID = u2.USER_ID WHERE LOWER(u2.USER_EMAIL) = LOWER(:email) AND u2.USER_TYPE = 'club_admin') AND u.USER_TYPE = 'student' ORDER BY u.USER_NAME`;
+        const sql = `SELECT u.USER_ID, u.USER_NAME, u.USER_EMAIL, si.STUDENT_NUMBER, si.STUDENT_FACULTY, si.STUDENT_PROGRAM, si.STUDENT_SEMESTER FROM USERS_CLUB uc JOIN USERS u ON uc.USER_ID = u.USER_ID JOIN STUDENT_INFO si ON u.USER_ID = si.USER_ID WHERE uc.CLUB_ID = (SELECT uc2.CLUB_ID FROM USERS_CLUB uc2 JOIN USERS u2 ON uc.USER_ID = u2.USER_ID WHERE LOWER(u2.USER_EMAIL) = LOWER(:email) AND u2.USER_TYPE = 'club_admin') AND u.USER_TYPE = 'student' ORDER BY u.USER_NAME`;
         const result = await connection.execute(sql, { email: req.params.email }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
+    } catch (err) { res.status(500).json({ message: "Error fetching members" }); }
+    finally { if (connection) await connection.close(); }
 });
 
 app.delete('/api/club-admin/members/:userId', async (req, res) => {
@@ -486,24 +492,30 @@ app.get('/api/club-admin/applicants/:email', async (req, res) => {
     } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
 });
 
+// FIXED: ORA-01745 Fix (Named Binds for Update + Insert) + Renamed :uid to :userid
 app.put('/api/club-admin/applicants/:id/approve', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        const appRes = await connection.execute(`SELECT USER_ID, CLUB_ID FROM APPLICATION WHERE APPLICATION_ID = :id`, [req.params.id], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+        const appRes = await connection.execute(`SELECT USER_ID, CLUB_ID FROM APPLICATION WHERE APPLICATION_ID = :id`, { id: req.params.id }, { outFormat: oracledb.OUT_FORMAT_OBJECT });
         const { USER_ID, CLUB_ID } = appRes.rows[0];
-        await connection.execute(`UPDATE APPLICATION SET APPLICATION_STATUS = 'Approved' WHERE APPLICATION_ID = :id`, [req.params.id]);
-        await connection.execute(`INSERT INTO USERS_CLUB (USER_CLUB_ID, USER_ID, CLUB_ID) VALUES (user_club_seq.NEXTVAL, :uid, :cid)`, { uid: USER_ID, cid: CLUB_ID });
+        
+        await connection.execute(`UPDATE APPLICATION SET APPLICATION_STATUS = 'Approved' WHERE APPLICATION_ID = :id`, { id: req.params.id });
+        
+        // Using Named Binds with :userid instead of :uid
+        await connection.execute(`INSERT INTO USERS_CLUB (USER_CLUB_ID, USER_ID, CLUB_ID) VALUES (user_club_seq.NEXTVAL, :userid, :cid)`, { userid: USER_ID, cid: CLUB_ID });
+        
         await connection.commit();
         res.json({ message: "Approved" });
     } catch (err) { if (connection) await connection.rollback(); res.status(500).json({ message: err.message }); } finally { if (connection) await connection.close(); }
 });
 
+// FIXED: ORA-01745 Fix (Named Binds)
 app.put('/api/club-admin/applicants/:id/reject', async (req, res) => {
     let connection;
     try {
         connection = await oracledb.getConnection(dbConfig);
-        await connection.execute(`UPDATE APPLICATION SET APPLICATION_STATUS = 'Rejected' WHERE APPLICATION_ID = :id`, [req.params.id]);
+        await connection.execute(`UPDATE APPLICATION SET APPLICATION_STATUS = 'Rejected' WHERE APPLICATION_ID = :id`, { id: req.params.id });
         await connection.commit();
         res.json({ message: "Rejected" });
     } catch (err) { res.status(500).json({ message: "Error" }); } finally { if (connection) await connection.close(); }
